@@ -3,537 +3,1185 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Pengumuman Hasil TKA — Portal Siswa</title>
+  <title>Admin — Pengumuman Hasil TKA</title>
   <meta name="robots" content="noindex, nofollow" />
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <script>
     tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: { sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'] },
-          colors: {
-            brand: { 50:'#ecfdf5',100:'#d1fae5',200:'#a7f3d0',500:'#10b981',600:'#059669',700:'#047857',800:'#065f46',900:'#064e3b' },
-            gold: { 400:'#facc15', 500:'#eab308' }
-          }
-        }
-      }
+      theme: { extend: {
+        fontFamily: { sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'] },
+        colors: { brand: { 50:'#ecfdf5',100:'#d1fae5',200:'#a7f3d0',500:'#10b981',600:'#059669',700:'#047857',800:'#065f46',900:'#064e3b' } }
+      } }
     };
   </script>
-  <!-- Pembuat PDF surat (file di repo yang sama) -->
   <script src="surat-tka.js" defer></script>
   <style>
     body { -webkit-font-smoothing: antialiased; }
     .hidden-el { display: none !important; }
-    .bg-pattern {
-      background-color: #064e3b;
-      background-image:
-        radial-gradient(circle at 15% 20%, rgba(16,185,129,.35) 0, transparent 40%),
-        radial-gradient(circle at 85% 80%, rgba(234,179,8,.18) 0, transparent 40%);
-    }
-    .fade-in { animation: fadeIn .35s ease-out; }
+    .fade-in { animation: fadeIn .3s ease-out; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
     .spinner { border: 3px solid rgba(255,255,255,.35); border-top-color: #fff; border-radius: 9999px; width: 18px; height: 18px; animation: spin .7s linear infinite; display: inline-block; }
-    .spinner-dark { border-color: rgba(6,95,70,.2); border-top-color: #065f46; width: 40px; height: 40px; }
+    .spinner-dark { border-color: rgba(15,23,42,.15); border-top-color: #047857; width: 40px; height: 40px; }
     @keyframes spin { to { transform: rotate(360deg); } }
+    th.sortable { cursor: pointer; user-select: none; }
+    th.sortable:hover { color: #047857; }
+    .table-wrap { max-height: calc(100vh - 230px); }
+    thead th { position: sticky; top: 0; z-index: 1; }
+    .menu-item { display: flex; width: 100%; align-items: flex-start; gap: .6rem; padding: .55rem .8rem; border-radius: .6rem; text-align: left; font-size: .875rem; }
+    .menu-item:hover { background: #f1f5f9; }
+    .modal-card { max-height: calc(100vh - 2rem); overflow-y: auto; }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans min-h-screen">
 
-<!-- ============================ LOGIN ============================ -->
-<section id="loginView" class="min-h-screen bg-pattern flex items-center justify-center px-4 py-10">
-  <div class="w-full max-w-md fade-in">
-    <div class="text-center text-white mb-6">
-      <p class="text-brand-200 text-xs font-semibold tracking-[0.2em] uppercase" data-cfg="SCHOOL_NAME_SHORT"></p>
-      <h1 class="text-2xl sm:text-3xl font-extrabold mt-1">Pengumuman Hasil TKA</h1>
-      <p class="text-brand-100/80 text-sm mt-1" data-cfg="EXAM_LABEL"></p>
-    </div>
-
-    <form id="loginForm" class="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 space-y-5" autocomplete="on" novalidate>
-      <div>
-        <h2 class="text-lg font-bold text-slate-900">Masuk Portal Siswa</h2>
-        <p class="text-sm text-slate-500">Gunakan NIS dan password dari kartu akun.</p>
+<!-- ============================ LOGIN ADMIN ============================ -->
+<section id="loginView" class="min-h-screen bg-slate-900 flex items-center justify-center px-4 py-10">
+  <div class="w-full max-w-sm fade-in">
+    <div class="text-center mb-6">
+      <div class="w-14 h-14 mx-auto rounded-2xl bg-brand-600 flex items-center justify-center text-white">
+        <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7l8-4z"/></svg>
       </div>
+      <h1 class="text-white text-2xl font-extrabold mt-3">Portal Admin TKA</h1>
+      <p class="text-slate-400 text-sm" data-cfg="SCHOOL_NAME"></p>
+    </div>
+    <form id="loginForm" class="bg-white rounded-2xl shadow-2xl p-6 space-y-4" novalidate>
       <div id="loginError" class="hidden-el rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm px-3 py-2.5"></div>
-
-      <label class="block">
-        <span class="text-sm font-semibold text-slate-700">NIS</span>
-        <input id="nis" name="username" type="text" inputmode="numeric" autocomplete="username" required
-               class="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-brand-500" placeholder="Contoh: 0012301" />
-      </label>
-      <label class="block">
-        <span class="text-sm font-semibold text-slate-700">Password</span>
-        <div class="relative mt-1.5">
-          <input id="password" name="password" type="password" autocomplete="current-password" required
-                 class="w-full rounded-xl border border-slate-300 px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-brand-500" placeholder="••••••••" />
-          <button type="button" id="togglePw" class="absolute inset-y-0 right-0 px-3.5 text-slate-400 hover:text-slate-600" aria-label="Tampilkan password">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M2.5 12S6 5 12 5s9.5 7 9.5 7-3.5 7-9.5 7S2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg>
-          </button>
-        </div>
-      </label>
-      <label class="flex items-start gap-2 text-sm text-slate-600 select-none">
-        <input id="remember" type="checkbox" class="mt-0.5 rounded border-slate-300 text-brand-600 focus:ring-brand-500" />
-        <span>Ingat saya di perangkat ini <span class="text-slate-400">(jangan dicentang di komputer umum)</span></span>
-      </label>
-      <button id="loginBtn" type="submit" class="w-full flex items-center justify-center gap-2 rounded-xl bg-brand-700 hover:bg-brand-800 text-white font-bold py-3 transition disabled:opacity-60">Masuk</button>
-      <p class="text-xs text-center text-slate-500">Lupa password? Hubungi wali kelas / panitia untuk reset password.</p>
+      <label class="block"><span class="text-sm font-semibold text-slate-700">Username / Email</span>
+        <input id="username" type="text" autocomplete="username" class="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500" /></label>
+      <label class="block"><span class="text-sm font-semibold text-slate-700">Password</span>
+        <input id="password" type="password" autocomplete="current-password" class="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500" /></label>
+      <button id="loginBtn" type="submit" class="w-full rounded-xl bg-brand-700 hover:bg-brand-800 text-white font-bold py-2.5 flex items-center justify-center gap-2 disabled:opacity-60">Masuk</button>
     </form>
-    <p class="text-center text-brand-100/70 text-xs mt-6" data-cfg="SCHOOL_NAME"></p>
+    <p class="text-center text-slate-500 text-xs mt-5">Halaman khusus panitia/admin.</p>
   </div>
 </section>
 
 <!-- ============================ DASHBOARD ============================ -->
 <section id="dashboardView" class="hidden-el min-h-screen">
-  <header class="bg-brand-800 text-white">
-    <div class="max-w-5xl mx-auto px-4 py-3 flex items-center gap-3">
+  <header class="bg-slate-900 text-white">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3">
+      <div class="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center font-extrabold">A</div>
       <div class="flex-1 min-w-0">
-        <p class="font-bold leading-tight truncate" data-cfg="SCHOOL_NAME"></p>
-        <p class="text-xs text-brand-200 leading-tight">Portal Hasil TKA</p>
+        <p class="font-bold leading-tight truncate">Admin Pengumuman TKA</p>
+        <p class="text-xs text-slate-400 leading-tight truncate" data-cfg="SCHOOL_NAME"></p>
       </div>
-      <button id="logoutBtn" class="inline-flex items-center gap-1.5 rounded-lg bg-white/10 hover:bg-white/20 px-3 py-2 text-sm font-semibold">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>
-        Keluar
-      </button>
+      <div class="hidden sm:block text-right mr-2">
+        <p id="adminName" class="text-sm font-semibold"></p>
+        <p id="adminRole" class="text-xs text-brand-200 uppercase tracking-wider"></p>
+      </div>
+      <button id="logoutBtn" class="rounded-lg bg-white/10 hover:bg-white/20 px-3 py-2 text-sm font-semibold">Keluar</button>
     </div>
   </header>
 
-  <main class="max-w-5xl mx-auto px-4 py-6 space-y-5 fade-in">
-    <div id="pwWarning" class="hidden-el rounded-xl border border-amber-300 bg-amber-50 p-4 flex flex-col sm:flex-row sm:items-center gap-3">
-      <div class="flex-1">
-        <p class="font-bold text-amber-900">Anda masih memakai password bawaan</p>
-        <p class="text-sm text-amber-800">Segera ganti password agar nilai Anda tidak bisa dilihat orang lain.</p>
-      </div>
-      <button data-open-pw class="rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold px-4 py-2">Ubah Password</button>
-    </div>
+  <main class="max-w-7xl mx-auto px-4 py-5 space-y-4">
+    <div id="suratBanner" class="hidden-el rounded-xl border px-4 py-2.5 text-sm flex items-center gap-3"></div>
+    <div id="statsGrid" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3"></div>
 
-    <!-- Identitas -->
-    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 sm:p-6">
-      <p class="text-xs font-semibold text-brand-700 uppercase tracking-wider">Identitas Peserta</p>
-      <h2 id="stNama" class="text-2xl font-extrabold text-slate-900 mt-1"></h2>
-      <dl class="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
-        <div class="rounded-lg bg-slate-50 px-3 py-2"><dt class="text-slate-500 text-xs">NIS</dt><dd id="stNis" class="font-bold"></dd></div>
-        <div class="rounded-lg bg-slate-50 px-3 py-2"><dt class="text-slate-500 text-xs">Kelas</dt><dd id="stKelas" class="font-bold"></dd></div>
-        <div class="rounded-lg bg-slate-50 px-3 py-2 col-span-2 sm:col-span-1"><dt class="text-slate-500 text-xs">Angkatan</dt><dd class="font-bold" data-cfg="ANGKATAN"></dd></div>
-      </dl>
-    </div>
-
-    <div class="grid md:grid-cols-5 gap-5">
-      <!-- Nilai -->
-      <div class="md:col-span-3 bg-white rounded-2xl shadow-sm border border-slate-200 p-5 sm:p-6">
-        <div class="flex items-center justify-between">
-          <p class="text-xs font-semibold text-brand-700 uppercase tracking-wider">Hasil TKA per Mata Pelajaran</p>
-          <button id="refreshBtn" class="text-xs font-semibold text-slate-500 hover:text-brand-700 inline-flex items-center gap-1">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4v6h6M20 20v-6h-6M5.6 15A8 8 0 0019 17.3M18.4 9A8 8 0 005 6.7"/></svg>
-            Perbarui
-          </button>
-        </div>
-        <div class="mt-3 overflow-hidden rounded-xl border border-slate-200">
-          <table class="w-full text-sm">
-            <thead class="bg-slate-50 text-slate-500 text-xs uppercase">
-              <tr><th class="text-left px-3 py-2">Mata Pelajaran</th><th class="text-right px-3 py-2">Nilai</th><th class="text-left px-3 py-2">Kategori</th></tr>
-            </thead>
-            <tbody id="subjectBody" class="divide-y divide-slate-100"></tbody>
-          </table>
-        </div>
-        <div class="mt-3 rounded-xl bg-brand-50 border border-brand-200 px-4 py-3 flex items-center justify-between">
-          <span class="font-bold text-brand-900">Total Nilai</span>
-          <span id="stTotal" class="text-2xl font-extrabold text-brand-800 tabular-nums"></span>
+    <!-- Aksi utama -->
+    <div class="flex flex-wrap gap-2">
+      <button id="importBtn" data-write class="inline-flex items-center gap-2 rounded-xl bg-brand-700 hover:bg-brand-800 text-white px-4 py-2 text-sm font-bold">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 15V3m0 0L8 7m4-4l4 4M4 15v4a2 2 0 002 2h12a2 2 0 002-2v-4"/></svg>Import Excel</button>
+      <button id="uploadCertBtn" data-write class="inline-flex items-center gap-2 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 px-4 py-2 text-sm font-semibold">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9l-6-6z"/><path d="M14 3v6h6M12 18v-6m0 0l-3 3m3-3l3 3"/></svg>Upload Sertifikat</button>
+      <div class="relative">
+        <button id="downloadMenuBtn" class="inline-flex items-center gap-2 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 px-4 py-2 text-sm font-semibold">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>Unduh ▾</button>
+        <div id="downloadMenu" class="hidden-el absolute z-30 mt-2 w-80 rounded-xl bg-white shadow-xl border border-slate-200 p-1.5">
+          <p class="px-3 pt-1.5 pb-1 text-[11px] font-bold text-slate-400 uppercase">Akun siswa (sesuai filter)</p>
+          <button data-dl="recapXlsx" data-write class="menu-item"><b class="text-emerald-700">XLSX</b><span>Rekap akun + QR code</span></button>
+          <button data-dl="recapPdf" data-write class="menu-item"><b class="text-red-600">PDF</b><span>Rekap akun per kelas + QR code</span></button>
+          <button data-dl="cardsPdf" data-write class="menu-item"><b class="text-red-600">PDF</b><span>Kartu akun siswa (siap potong, 10/halaman)</span></button>
+          <p class="px-3 pt-2 pb-1 text-[11px] font-bold text-slate-400 uppercase">Hasil TKA</p>
+          <button data-dl="letters" class="menu-item"><b class="text-red-600">PDF</b><span>Surat hasil TKA massal (sesuai filter)</span></button>
+          <button data-dl="csv" class="menu-item"><b class="text-slate-600">CSV</b><span>Data nilai & peringkat</span></button>
+          <p class="px-3 pt-2 pb-1 text-[11px] font-bold text-slate-400 uppercase">Import</p>
+          <button data-dl="template" class="menu-item"><b class="text-emerald-700">XLSX</b><span>Template import (berisi data saat ini)</span></button>
         </div>
       </div>
-
-      <!-- Peringkat -->
-      <div class="md:col-span-2 rounded-2xl shadow-sm p-5 sm:p-6 text-white bg-gradient-to-br from-brand-700 to-brand-900 relative overflow-hidden">
-        <div class="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-white/10"></div>
-        <p class="text-xs font-semibold text-brand-200 uppercase tracking-wider relative">Peringkat Angkatan</p>
-        <div id="rankBox" class="relative mt-3"></div>
-        <p class="relative mt-4 text-xs text-brand-100/80">Demi privasi, Anda hanya dapat melihat posisi Anda sendiri. Daftar peringkat lengkap tidak dipublikasikan.</p>
-      </div>
+      <button id="settingsBtn" class="inline-flex items-center gap-2 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 px-4 py-2 text-sm font-semibold">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg>Pengaturan Surat</button>
+      <div class="flex-1"></div>
+      <button id="rankBtn" data-write class="rounded-xl border border-brand-600 text-brand-700 hover:bg-brand-50 px-3 py-2 text-sm font-semibold">Hitung Ulang Ranking</button>
+      <button id="refreshBtn" class="rounded-xl border border-slate-300 bg-white hover:bg-slate-50 px-3 py-2 text-sm font-semibold">Muat Ulang</button>
     </div>
 
-    <!-- Dokumen -->
-    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 sm:p-6">
-      <p class="text-xs font-semibold text-brand-700 uppercase tracking-wider">Dokumen</p>
-      <div class="mt-3 grid sm:grid-cols-3 gap-3">
-        <button id="letterBtn" class="flex items-center justify-center gap-2 rounded-xl px-4 py-3 font-bold text-white bg-brand-700 hover:bg-brand-800 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed transition">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9l-6-6z"/><path d="M14 3v6h6M12 12v6m0 0l-3-3m3 3l3-3"/></svg>
-          <span>Download Surat Hasil TKA</span>
-        </button>
-        <button id="certBtn" class="flex items-center justify-center gap-2 rounded-xl px-4 py-3 font-bold text-white bg-gold-500 hover:brightness-95 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed transition">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
-          <span>Download Sertifikat Dinas</span>
-        </button>
-        <button data-open-pw class="flex items-center justify-center gap-2 rounded-xl px-4 py-3 font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>
-          Ubah Password
-        </button>
+    <!-- Filter -->
+    <div class="bg-white rounded-2xl border border-slate-200 p-3 flex flex-col md:flex-row gap-2">
+      <div class="relative flex-1">
+        <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input id="search" type="search" placeholder="Cari nama atau NIS…" class="w-full rounded-xl border border-slate-300 pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
       </div>
-      <ul id="docNotes" class="text-xs text-slate-500 mt-3 space-y-1"></ul>
+      <select id="filterKelas" class="rounded-xl border border-slate-300 px-3 py-2 text-sm"><option value="">Semua kelas</option></select>
+      <select id="filterCert" class="rounded-xl border border-slate-300 px-3 py-2 text-sm">
+        <option value="">Semua sertifikat</option><option value="yes">Sertifikat sudah ada</option><option value="no">Sertifikat belum ada</option>
+      </select>
     </div>
+
+    <!-- Tabel -->
+    <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+      <div class="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
+        <h2 class="font-bold">Leaderboard & Data Peserta</h2>
+        <p id="countInfo" class="text-xs text-slate-500"></p>
+      </div>
+      <div class="table-wrap overflow-auto">
+        <table class="min-w-full text-sm">
+          <thead id="thead" class="bg-slate-50 text-slate-600 text-xs uppercase tracking-wide"></thead>
+          <tbody id="tbody" class="divide-y divide-slate-100"></tbody>
+        </table>
+      </div>
+    </div>
+    <p class="text-xs text-slate-500">Peringkat: kolom <b>Ranking</b> di sheet dipakai bila terisi; bila kosong dihitung otomatis dari Total_Nilai (nilai sama = peringkat sama). Setelah mengedit sheet secara manual, klik <b>Muat Ulang</b>.</p>
   </main>
 </section>
 
-<!-- ============================ MODAL UBAH PASSWORD ============================ -->
-<div id="pwModal" class="hidden-el fixed inset-0 z-40 bg-slate-900/60 flex items-end sm:items-center justify-center sm:p-4">
-  <form id="pwForm" class="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-6 space-y-4 fade-in" novalidate>
-    <div class="flex items-start justify-between">
+<!-- ============================ MODAL: IMPORT EXCEL ============================ -->
+<div id="importModal" class="modal hidden-el fixed inset-0 z-40 bg-slate-900/60 flex items-center justify-center p-4">
+  <div class="modal-card bg-white w-full max-w-3xl rounded-2xl p-6 space-y-4 fade-in">
+    <div class="flex items-start justify-between gap-3">
       <div>
-        <h3 class="text-lg font-bold">Ubah Password</h3>
-        <p class="text-sm text-slate-500">Minimal 6 karakter dan tidak sama dengan NIS.</p>
+        <h3 class="text-lg font-bold">Import Data Siswa dari Excel</h3>
+        <p class="text-sm text-slate-500">Format .xlsx, .xls, atau .csv. Gunakan <button type="button" data-dl="template" class="text-brand-700 font-semibold underline">template import</button> agar nama kolom sesuai.</p>
       </div>
-      <button type="button" data-close-pw class="text-slate-400 hover:text-slate-600 text-2xl leading-none" aria-label="Tutup">&times;</button>
+      <button type="button" data-close class="text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>
     </div>
-    <div id="pwError" class="hidden-el rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm px-3 py-2"></div>
-    <label class="block"><span class="text-sm font-semibold">Password lama</span>
-      <input id="oldPw" type="password" autocomplete="current-password" class="mt-1 w-full rounded-xl border border-slate-300 px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500" /></label>
-    <label class="block"><span class="text-sm font-semibold">Password baru</span>
-      <input id="newPw" type="password" autocomplete="new-password" class="mt-1 w-full rounded-xl border border-slate-300 px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500" /></label>
-    <label class="block"><span class="text-sm font-semibold">Ulangi password baru</span>
-      <input id="newPw2" type="password" autocomplete="new-password" class="mt-1 w-full rounded-xl border border-slate-300 px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500" /></label>
-    <label class="flex items-center gap-2 text-sm text-slate-600"><input id="showPwAll" type="checkbox" class="rounded text-brand-600" /> Tampilkan password</label>
-    <div class="flex gap-2 pt-1">
-      <button type="button" data-close-pw class="flex-1 rounded-xl bg-slate-100 hover:bg-slate-200 font-semibold py-2.5">Batal</button>
-      <button id="pwSubmit" type="submit" class="flex-1 rounded-xl bg-brand-700 hover:bg-brand-800 text-white font-bold py-2.5 flex items-center justify-center gap-2 disabled:opacity-60">Simpan</button>
+    <label id="dropZone" class="block border-2 border-dashed border-slate-300 rounded-xl p-6 text-center cursor-pointer hover:border-brand-500 hover:bg-brand-50/40">
+      <input id="importFile" type="file" accept=".xlsx,.xls,.csv" class="hidden" />
+      <p class="font-semibold text-slate-700">Klik untuk memilih file, atau seret file ke sini</p>
+      <p id="importFileName" class="text-xs text-slate-500 mt-1">Belum ada file dipilih</p>
+    </label>
+    <div id="importPreview" class="hidden-el space-y-3">
+      <div id="importSummary" class="grid grid-cols-2 sm:grid-cols-4 gap-2"></div>
+      <div id="importWarnings" class="text-xs space-y-1"></div>
+      <div class="overflow-auto max-h-60 rounded-xl border border-slate-200">
+        <table class="min-w-full text-xs"><thead id="importHead" class="bg-slate-50"></thead><tbody id="importBody" class="divide-y divide-slate-100"></tbody></table>
+      </div>
+      <div class="grid sm:grid-cols-2 gap-3">
+        <label class="flex items-start gap-2 rounded-xl border border-slate-200 p-3 cursor-pointer has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50">
+          <input type="radio" name="importMode" value="upsert" checked class="mt-1 text-brand-600" />
+          <span><b class="text-sm">Tambah & perbarui</b><br><span class="text-xs text-slate-500">Siswa baru ditambahkan, siswa lama diperbarui. Siswa yang tidak ada di file tetap disimpan.</span></span>
+        </label>
+        <label class="flex items-start gap-2 rounded-xl border border-slate-200 p-3 cursor-pointer has-[:checked]:border-red-500 has-[:checked]:bg-red-50">
+          <input type="radio" name="importMode" value="replace" class="mt-1 text-red-600" />
+          <span><b class="text-sm">Ganti semua data</b><br><span class="text-xs text-slate-500">Isi sheet diganti persis seperti file. Siswa yang tidak ada di file akan <b>dihapus</b>.</span></span>
+        </label>
+      </div>
+      <label class="flex items-start gap-2 text-sm text-slate-600">
+        <input id="importOverwritePw" type="checkbox" class="mt-0.5 rounded text-red-600" />
+        <span>Reset juga password siswa yang <b>sudah diganti</b> ke password default/file. <span class="text-slate-400">(Biarkan tidak dicentang kecuali memang perlu.)</span></span>
+      </label>
+      <p class="text-xs text-slate-500">Sel yang kosong di file tidak menghapus data lama. Link sertifikat dan password yang sudah diganti siswa tetap aman.</p>
+    </div>
+    <div class="flex justify-end gap-2 pt-1">
+      <button type="button" data-close class="rounded-xl bg-slate-100 hover:bg-slate-200 px-4 py-2.5 text-sm font-semibold">Batal</button>
+      <button id="importSubmit" disabled class="rounded-xl bg-brand-700 hover:bg-brand-800 text-white px-5 py-2.5 text-sm font-bold disabled:opacity-40">Import Sekarang</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================ MODAL: UPLOAD SERTIFIKAT ============================ -->
+<div id="certModal" class="modal hidden-el fixed inset-0 z-40 bg-slate-900/60 flex items-center justify-center p-4">
+  <div class="modal-card bg-white w-full max-w-2xl rounded-2xl p-6 space-y-4 fade-in">
+    <div class="flex items-start justify-between gap-3">
+      <div>
+        <h3 class="text-lg font-bold">Upload Sertifikat Dinas (Massal)</h3>
+        <p class="text-sm text-slate-500">Pilih banyak file sekaligus (PDF/JPG/PNG, maks 10 MB). Nama file harus memuat <b>NIS</b> siswa, misalnya <code class="bg-slate-100 px-1 rounded">0012301.pdf</code> atau <code class="bg-slate-100 px-1 rounded">Sertifikat_0012301_Abbie.pdf</code>. File disimpan di Google Drive sekolah dan link-nya terisi otomatis.</p>
+      </div>
+      <button type="button" data-close class="text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>
+    </div>
+    <label class="block border-2 border-dashed border-slate-300 rounded-xl p-5 text-center cursor-pointer hover:border-brand-500">
+      <input id="certFiles" type="file" accept=".pdf,.jpg,.jpeg,.png" multiple class="hidden" />
+      <p class="font-semibold text-slate-700">Klik untuk memilih file sertifikat</p>
+      <p class="text-xs text-slate-500 mt-1">Bisa memilih ratusan file sekaligus</p>
+    </label>
+    <div id="certSummary" class="text-sm"></div>
+    <div class="overflow-auto max-h-72 rounded-xl border border-slate-200 hidden-el" id="certListWrap">
+      <table class="min-w-full text-xs"><thead class="bg-slate-50"><tr><th class="text-left px-3 py-2">File</th><th class="text-left px-3 py-2">Siswa</th><th class="text-left px-3 py-2">Status</th></tr></thead><tbody id="certList" class="divide-y divide-slate-100"></tbody></table>
+    </div>
+    <div id="certProgressWrap" class="hidden-el">
+      <div class="h-2 rounded-full bg-slate-100 overflow-hidden"><div id="certProgress" class="h-full bg-brand-600 transition-all" style="width:0%"></div></div>
+      <p id="certProgressText" class="text-xs text-slate-500 mt-1"></p>
+    </div>
+    <div class="flex justify-end gap-2">
+      <button type="button" data-close class="rounded-xl bg-slate-100 hover:bg-slate-200 px-4 py-2.5 text-sm font-semibold">Tutup</button>
+      <button id="certSubmit" disabled class="rounded-xl bg-brand-700 hover:bg-brand-800 text-white px-5 py-2.5 text-sm font-bold disabled:opacity-40">Upload</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================ MODAL: PENGATURAN SURAT ============================ -->
+<div id="settingsModal" class="modal hidden-el fixed inset-0 z-40 bg-slate-900/60 flex items-center justify-center p-4">
+  <div class="modal-card bg-white w-full max-w-3xl rounded-2xl p-6 space-y-4 fade-in">
+    <div class="flex items-start justify-between gap-3">
+      <div>
+        <h3 class="text-lg font-bold">Pengaturan Surat & Pengumuman</h3>
+        <p class="text-sm text-slate-500">Perubahan langsung berlaku untuk surat yang diunduh siswa.</p>
+      </div>
+      <button type="button" data-close class="text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>
+    </div>
+    <div class="grid sm:grid-cols-2 gap-3">
+      <div class="rounded-xl border border-slate-200 p-3">
+        <p class="text-sm font-bold">Logo kop surat</p>
+        <div class="h-24 my-2 flex items-center justify-center bg-slate-50 rounded-lg"><img id="logoPreview" class="max-h-20 hidden-el" alt="" /><span id="logoEmpty" class="text-xs text-slate-400">Belum ada logo</span></div>
+        <label data-write class="block text-center rounded-lg border border-slate-300 hover:bg-slate-50 py-1.5 text-sm font-semibold cursor-pointer">Unggah logo (PNG/JPG)<input id="logoFile" type="file" accept="image/png,image/jpeg" class="hidden" /></label>
+      </div>
+      <div class="rounded-xl border border-slate-200 p-3">
+        <p class="text-sm font-bold">Tanda tangan + stempel</p>
+        <div class="h-24 my-2 flex items-center justify-center bg-slate-50 rounded-lg"><img id="ttdPreview" class="max-h-20 hidden-el" alt="" /><span id="ttdEmpty" class="text-xs text-slate-400">Belum ada (surat dicetak dengan ruang tanda tangan basah)</span></div>
+        <label data-write class="block text-center rounded-lg border border-slate-300 hover:bg-slate-50 py-1.5 text-sm font-semibold cursor-pointer">Unggah scan TTD (PNG transparan)<input id="ttdFile" type="file" accept="image/png,image/jpeg" class="hidden" /></label>
+      </div>
+    </div>
+    <form id="settingsForm" class="grid sm:grid-cols-2 gap-3"></form>
+    <div class="flex flex-wrap justify-end gap-2 pt-1">
+      <button id="previewLetterBtn" type="button" class="rounded-xl border border-slate-300 hover:bg-slate-50 px-4 py-2.5 text-sm font-semibold">Pratinjau Surat</button>
+      <div class="flex-1"></div>
+      <button type="button" data-close class="rounded-xl bg-slate-100 hover:bg-slate-200 px-4 py-2.5 text-sm font-semibold">Tutup</button>
+      <button id="settingsSave" data-write type="button" class="rounded-xl bg-brand-700 hover:bg-brand-800 text-white px-5 py-2.5 text-sm font-bold">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================ MODAL: LINK SERTIFIKAT ============================ -->
+<div id="linkModal" class="modal hidden-el fixed inset-0 z-40 bg-slate-900/60 flex items-end sm:items-center justify-center sm:p-4">
+  <form id="linkForm" class="bg-white w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl p-6 space-y-4 fade-in" novalidate>
+    <div class="flex items-start justify-between gap-3">
+      <div><h3 class="text-lg font-bold">Sertifikat Dinas</h3><p id="linkStudent" class="text-sm text-slate-500"></p></div>
+      <button type="button" data-close class="text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>
+    </div>
+    <div id="linkError" class="hidden-el rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm px-3 py-2"></div>
+    <label class="block"><span class="text-sm font-semibold">URL Google Drive</span>
+      <input id="linkInput" type="url" placeholder="https://drive.google.com/file/d/…/view" class="mt-1 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" /></label>
+    <div class="flex items-center gap-2 text-xs text-slate-500"><span class="h-px flex-1 bg-slate-200"></span>atau<span class="h-px flex-1 bg-slate-200"></span></div>
+    <label class="block text-center rounded-xl border border-dashed border-slate-300 hover:border-brand-500 py-2.5 text-sm font-semibold cursor-pointer">
+      Upload file sertifikat siswa ini (PDF/JPG/PNG)<input id="linkFile" type="file" accept=".pdf,.jpg,.jpeg,.png" class="hidden" /></label>
+    <p class="text-xs text-slate-500">Jika menempel link manual, pastikan file dibagikan "Siapa saja yang memiliki link — Pelihat".</p>
+    <div class="flex flex-wrap gap-2 pt-1">
+      <button type="button" id="linkTest" class="rounded-xl border border-slate-300 hover:bg-slate-50 px-4 py-2.5 text-sm font-semibold">Uji Buka</button>
+      <button type="button" id="linkClear" class="rounded-xl border border-red-300 text-red-600 hover:bg-red-50 px-4 py-2.5 text-sm font-semibold">Hapus Link</button>
+      <div class="flex-1"></div>
+      <button type="button" data-close class="rounded-xl bg-slate-100 hover:bg-slate-200 px-4 py-2.5 text-sm font-semibold">Batal</button>
+      <button id="linkSave" type="submit" class="rounded-xl bg-brand-700 hover:bg-brand-800 text-white px-5 py-2.5 text-sm font-bold disabled:opacity-60">Simpan</button>
     </div>
   </form>
 </div>
 
-<div id="loadingOverlay" class="hidden-el fixed inset-0 z-50 bg-white/70 backdrop-blur-sm flex flex-col items-center justify-center gap-3">
-  <div class="spinner spinner-dark"></div>
-  <p id="loadingText" class="text-sm font-semibold text-brand-800"></p>
+<!-- ============================ MODAL: KONFIRMASI ============================ -->
+<div id="confirmModal" class="hidden-el fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
+  <div class="bg-white w-full max-w-sm rounded-2xl p-6 fade-in">
+    <h3 id="confirmTitle" class="text-lg font-bold"></h3>
+    <p id="confirmText" class="text-sm text-slate-600 mt-1 whitespace-pre-line"></p>
+    <div class="flex gap-2 mt-5">
+      <button id="confirmNo" class="flex-1 rounded-xl bg-slate-100 hover:bg-slate-200 py-2.5 font-semibold">Batal</button>
+      <button id="confirmYes" class="flex-1 rounded-xl bg-red-600 hover:bg-red-700 text-white py-2.5 font-bold">Ya, lanjutkan</button>
+    </div>
+  </div>
 </div>
-<div id="toast" class="hidden-el fixed z-50 bottom-5 left-1/2 -translate-x-1/2 px-4 py-3 rounded-xl shadow-lg text-sm font-semibold text-white max-w-[90vw]"></div>
+
+<div id="loadingOverlay" class="hidden-el fixed inset-0 z-[60] bg-white/75 backdrop-blur-sm flex flex-col items-center justify-center gap-3">
+  <div class="spinner spinner-dark"></div><p id="loadingText" class="text-sm font-semibold text-slate-700"></p>
+</div>
+<div id="toast" class="hidden-el fixed z-[70] bottom-5 left-1/2 -translate-x-1/2 px-4 py-3 rounded-xl shadow-lg text-sm font-semibold text-white max-w-[90vw]"></div>
 
 <script>
 /* ============================================================================
- *  KONFIGURASI — SESUAIKAN SEBELUM DIUNGGAH KE GITHUB PAGES
- *  (Teks kop & isi surat diatur dari Portal Admin > Pengaturan Surat)
+ *  KONFIGURASI
  * ========================================================================== */
 const CONFIG = {
-  API_URL: 'https://script.google.com/macros/s/GANTI_DENGAN_ID_DEPLOYMENT/exec',
+  API_URL: 'https://script.google.com/macros/s/AKfycbzermFRNLFkSGhN9FH4hLjcfTaROpLi5Bzesnf9j5XA1pMjy6lxy6GpVLBb7qpS6BoM/exec',   // sama dengan index.html
   SCHOOL_NAME: 'SMA IT Al-Ittihad Pekanbaru',
-  SCHOOL_NAME_SHORT: 'SMA IT Al-Ittihad',
-  EXAM_LABEL: 'Tes Kemampuan Akademik (TKA) 2026',
-  ANGKATAN: 'Kelas XII · 2026/2027',
-  JSPDF_URL: 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'
+  SCHOOL_SHORT: 'SMA IT AL-ITTIHAD',
+  PORTAL_URL: '',          // kosongkan = otomatis index.html di folder yang sama dengan admin.html
+  READ_ONLY_ROLES: ['viewer'],
+  LIBS: {
+    jspdf: 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
+    xlsx: 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
+    exceljs: 'https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js',
+    qrcode: 'https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js'
+  }
 };
 
 /* ============================================================================
- *  UTILITAS
+ *  STATE & UTILITAS
  * ========================================================================== */
 const $ = (id) => document.getElementById(id);
-const SESSION_KEY = 'tka_siswa_session_v2';
-const ASSET_KEY = 'tka_letter_assets_v2';
-const REFRESH_MIN_MS = 120000;   // data diperbarui di latar belakang maksimal tiap 2 menit
-let state = { token: null, profile: null, fetchedAt: 0 };
-
+const SESSION_KEY = 'tka_admin_session_v2';
+let state = {
+  token: null, admin: null, students: [], subjectCols: [], kelasList: [], stats: null,
+  letter: null, suratAktif: false, sortKey: 'ranking', sortDir: 1, editingNis: null, assets: null
+};
 const show = (el) => el.classList.remove('hidden-el');
 const hide = (el) => el.classList.add('hidden-el');
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-const fmt = (n) => (n === null || n === undefined || n === '' || isNaN(Number(n))) ? '—' : Number(n).toFixed(2);
+const fmt = (n) => (n === null || n === undefined || n === '' || isNaN(Number(n))) ? '—' : Number(n).toLocaleString('id-ID', { maximumFractionDigits: 2 });
 const escapeHtml = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+const isReadOnly = () => CONFIG.READ_ONLY_ROLES.includes(String(state.admin?.role || '').toLowerCase());
+const portalUrl = () => CONFIG.PORTAL_URL || new URL('index.html', location.href).href.split('?')[0];
+const today = () => new Date().toISOString().slice(0, 10);
 
 let toastTimer;
-function toast(msg, type = 'success', ms = 3500) {
+function toast(msg, type = 'success', ms = 4000) {
   const t = $('toast');
   t.textContent = msg;
-  t.className = 'fixed z-50 bottom-5 left-1/2 -translate-x-1/2 px-4 py-3 rounded-xl shadow-lg text-sm font-semibold text-white max-w-[90vw] fade-in ' +
-    (type === 'error' ? 'bg-red-600' : type === 'info' ? 'bg-slate-800' : 'bg-brand-700');
+  t.className = 'fixed z-[70] bottom-5 left-1/2 -translate-x-1/2 px-4 py-3 rounded-xl shadow-lg text-sm font-semibold text-white max-w-[90vw] fade-in ' + (type === 'error' ? 'bg-red-600' : 'bg-slate-900');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => hide(t), ms);
 }
-function loading(on, text = '') { $('loadingText').textContent = text; on ? show($('loadingOverlay')) : hide($('loadingOverlay')); }
-function btnBusy(btn, on) {
-  if (on) { btn.dataset.html = btn.innerHTML; btn.disabled = true; btn.innerHTML = '<span class="spinner"></span><span>Memproses…</span>'; }
-  else { btn.disabled = false; if (btn.dataset.html) btn.innerHTML = btn.dataset.html; }
-}
+function loading(on, text = 'Memproses…') { $('loadingText').textContent = text; on ? show($('loadingOverlay')) : hide($('loadingOverlay')); }
 
-/**
- * Pemanggilan API dengan percobaan ulang otomatis.
- * Saat ratusan siswa membuka bersamaan, Apps Script kadang menolak sebagian permintaan;
- * permintaan itu dicoba ulang dengan jeda acak yang makin panjang (exponential backoff + jitter).
- */
-async function api(action, payload = {}, { retries = 4, timeout = 30000 } = {}) {
-  if (CONFIG.API_URL.includes('GANTI_DENGAN')) throw new Error('API_URL belum diatur di index.html.');
+async function api(action, payload = {}, { retries = 2, timeout = 120000 } = {}) {
+  if (CONFIG.API_URL.includes('GANTI_DENGAN')) throw new Error('API_URL belum diatur di admin.html.');
   let lastErr;
   for (let attempt = 0; attempt <= retries; attempt++) {
-    if (attempt > 0) {
-      const wait = Math.min(8000, 700 * 2 ** (attempt - 1)) + Math.random() * 900;
-      toast(`Server sedang ramai, mencoba lagi (${attempt}/${retries})…`, 'info', wait + 1500);
-      await sleep(wait);
-    }
+    if (attempt > 0) await sleep(800 * 2 ** (attempt - 1) + Math.random() * 600);
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), timeout);
     try {
       const res = await fetch(CONFIG.API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action, ...payload }),
-        redirect: 'follow',
-        signal: ctrl.signal
+        method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action, ...payload }), redirect: 'follow', signal: ctrl.signal
       });
       const text = await res.text();
       let json;
-      try { json = JSON.parse(text); } catch { throw new Error('RETRY'); }        // halaman error Google = server penuh
+      try { json = JSON.parse(text); } catch { throw new Error('RETRY'); }
       if (!json.ok && json.code === 'BUSY') throw new Error('RETRY');
-      if (!json.ok && json.code === 'SESSION_EXPIRED' && state.token) {
-        clearSession(); renderLogin(); toast('Sesi berakhir, silakan login kembali.', 'error');
-      }
+      if (!json.ok && json.code === 'SESSION_EXPIRED' && state.token) { logoutLocal(); toast('Sesi admin berakhir, silakan login kembali.', 'error'); }
       return json;
     } catch (e) {
       lastErr = e;
       if (e.message !== 'RETRY' && e.name !== 'AbortError' && e.name !== 'TypeError') throw e;
     } finally { clearTimeout(timer); }
   }
-  throw new Error(lastErr && lastErr.name === 'TypeError'
-    ? 'Tidak dapat terhubung. Periksa koneksi internet Anda.'
-    : 'Server sedang sangat ramai. Silakan coba beberapa menit lagi.');
+  throw new Error(lastErr?.name === 'AbortError' ? 'Permintaan terlalu lama. Coba lagi.' : 'Gagal menghubungi server. Coba lagi beberapa saat.');
 }
 
 function loadScript(src) {
   return new Promise((resolve, reject) => {
-    if (document.querySelector(`script[src="${src}"]`)?.dataset.loaded) return resolve();
+    const ex = document.querySelector(`script[src="${src}"]`);
+    if (ex && ex.dataset.loaded) return resolve();
     const s = document.createElement('script');
     s.src = src; s.async = true;
     s.onload = () => { s.dataset.loaded = '1'; resolve(); };
-    s.onerror = () => reject(new Error('Gagal memuat pustaka. Periksa koneksi internet.'));
+    s.onerror = () => reject(new Error('Gagal memuat pustaka dari internet.'));
     document.head.appendChild(s);
   });
 }
+const libs = (...names) => Promise.all(names.map((n) => loadScript(CONFIG.LIBS[n])));
+
+function downloadBlob(blob, name) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+const safeName = (s) => String(s || 'semua').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+function confirmDialog(title, text, yesLabel = 'Ya, lanjutkan', danger = true) {
+  return new Promise((resolve) => {
+    $('confirmTitle').textContent = title; $('confirmText').textContent = text; $('confirmYes').textContent = yesLabel;
+    $('confirmYes').className = 'flex-1 rounded-xl text-white py-2.5 font-bold ' + (danger ? 'bg-red-600 hover:bg-red-700' : 'bg-brand-700 hover:bg-brand-800');
+    show($('confirmModal'));
+    const done = (v) => { hide($('confirmModal')); $('confirmYes').onclick = $('confirmNo').onclick = null; resolve(v); };
+    $('confirmYes').onclick = () => done(true); $('confirmNo').onclick = () => done(false);
+  });
+}
+
+function openModal(id) { show($(id)); }
+function closeModal(id) { hide($(id)); }
+document.querySelectorAll('.modal').forEach((m) => {
+  m.addEventListener('click', (e) => { if (e.target === m) hide(m); });
+  m.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', () => hide(m)));
+});
+
+/** QR code sebagai PNG data URL (pustaka qrcode-generator). */
+function qrDataUrl(text, px = 240) {
+  const qr = qrcode(0, 'M'); qr.addData(text); qr.make();
+  const n = qr.getModuleCount(), quiet = 2, size = n + quiet * 2, scale = Math.max(2, Math.floor(px / size));
+  const c = document.createElement('canvas'); c.width = c.height = size * scale;
+  const g = c.getContext('2d');
+  g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.fillStyle = '#000';
+  for (let r = 0; r < n; r++) for (let k = 0; k < n; k++) if (qr.isDark(r, k)) g.fillRect((k + quiet) * scale, (r + quiet) * scale, scale, scale);
+  return c.toDataURL('image/png');
+}
+const loginUrlFor = (nis) => portalUrl() + '?nis=' + encodeURIComponent(nis);
 
 /* ---------- Sesi ---------- */
-function storage() { return localStorage.getItem(SESSION_KEY) ? localStorage : sessionStorage; }
-function saveSession(remember) {
-  const data = JSON.stringify({ token: state.token, profile: state.profile, fetchedAt: state.fetchedAt, savedAt: Date.now() });
-  try {
-    (remember ? localStorage : sessionStorage).setItem(SESSION_KEY, data);
-    (remember ? sessionStorage : localStorage).removeItem(SESSION_KEY);
-  } catch {}
-}
-function persistProfile() {
-  try {
-    const st = storage(), raw = st.getItem(SESSION_KEY);
-    if (raw) { const s = JSON.parse(raw); s.profile = state.profile; s.fetchedAt = state.fetchedAt; st.setItem(SESSION_KEY, JSON.stringify(s)); }
-  } catch {}
-}
-function loadSession() {
-  try {
-    const raw = sessionStorage.getItem(SESSION_KEY) || localStorage.getItem(SESSION_KEY);
-    if (!raw) return null;
-    const s = JSON.parse(raw);
-    if (Date.now() - (s.savedAt || 0) > 6 * 3600 * 1000) { clearSession(); return null; }
-    return s;
-  } catch { return null; }
-}
-function clearSession() {
-  try { sessionStorage.removeItem(SESSION_KEY); localStorage.removeItem(SESSION_KEY); sessionStorage.removeItem(ASSET_KEY); } catch {}
-  state = { token: null, profile: null, fetchedAt: 0 };
+function saveSession() { sessionStorage.setItem(SESSION_KEY, JSON.stringify({ token: state.token, admin: state.admin })); }
+function loadSession() { try { return JSON.parse(sessionStorage.getItem(SESSION_KEY)); } catch { return null; } }
+function logoutLocal() {
+  sessionStorage.removeItem(SESSION_KEY);
+  Object.assign(state, { token: null, admin: null, students: [], assets: null });
+  document.querySelectorAll('.modal').forEach(hide);
+  hide($('dashboardView')); show($('loginView')); $('password').value = '';
 }
 
 /* ============================================================================
- *  RENDER
+ *  DATA & RENDER
  * ========================================================================== */
-function applyConfigText() {
-  document.querySelectorAll('[data-cfg]').forEach((el) => { el.textContent = CONFIG[el.dataset.cfg] ?? ''; });
-  document.title = 'Pengumuman Hasil TKA — ' + CONFIG.SCHOOL_NAME_SHORT;
+async function loadData(silent = false) {
+  if (!silent) loading(true, 'Memuat data siswa…');
+  try {
+    const res = await api('getAdminData', { token: state.token });
+    if (!res.ok) { if (res.code !== 'SESSION_EXPIRED') toast(res.error, 'error'); return false; }
+    Object.assign(state, res.data);
+    renderAll();
+    return true;
+  } catch (e) { toast(e.message, 'error'); return false; }
+  finally { if (!silent) loading(false); }
 }
 
-function renderLogin() {
-  hide($('dashboardView')); show($('loginView'));
-  $('password').value = '';
-  hide($('loginError'));
-}
-
-const KATEGORI_STYLE = {
-  istimewa: 'bg-emerald-100 text-emerald-800',
-  baik: 'bg-sky-100 text-sky-800',
-  memadai: 'bg-amber-100 text-amber-800',
-  kurang: 'bg-red-100 text-red-700'
-};
-
-function renderDashboard() {
-  const p = state.profile;
-  if (!p) return renderLogin();
+function renderAll() {
   hide($('loginView')); show($('dashboardView'));
+  $('adminName').textContent = state.admin.username;
+  $('adminRole').textContent = state.admin.role;
+  document.querySelectorAll('[data-write]').forEach((b) => b.classList.toggle('hidden-el', isReadOnly()));
+  const banner = $('suratBanner');
+  banner.className = 'rounded-xl border px-4 py-2.5 text-sm flex items-center gap-3 ' + (state.suratAktif ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-amber-50 border-amber-200 text-amber-900');
+  banner.innerHTML = state.suratAktif
+    ? '<b>Surat hasil TKA: AKTIF</b><span class="text-emerald-700">— siswa dapat mengunduh surat.</span>'
+    : '<b>Surat hasil TKA: NONAKTIF</b><span>— aktifkan di Pengaturan Surat bila sudah siap dibagikan.</span>';
+  renderStats(); renderKelasFilter(); renderHead(); renderTable();
+}
 
-  $('stNama').textContent = p.nama;
-  $('stNis').textContent = p.nis;
-  $('stKelas').textContent = p.kelas || '—';
-  $('stTotal').textContent = fmt(p.total);
-  p.passwordIsDefault ? show($('pwWarning')) : hide($('pwWarning'));
+const pct = (a, b) => b ? Math.round((a / b) * 100) + '% siswa' : '—';
+function renderStats() {
+  const s = state.stats;
+  const cards = [
+    ['Total Siswa', s.totalSiswa, s.totalDinilai + ' sudah bernilai', 'text-slate-900'],
+    ['Nilai Tertinggi', fmt(s.tertinggi), 'Total nilai', 'text-brand-700'],
+    ['Nilai Terendah', fmt(s.terendah), 'Total nilai', 'text-red-600'],
+    ['Rata-rata Angkatan', fmt(s.rataRata), 'Total nilai', 'text-sky-700'],
+    ['Sertifikat Terisi', s.sertifikatTerisi + '/' + s.totalSiswa, pct(s.sertifikatTerisi, s.totalSiswa), 'text-amber-600'],
+    ['Password Diubah', s.passwordDiubah + '/' + s.totalSiswa, pct(s.passwordDiubah, s.totalSiswa), 'text-violet-700']
+  ];
+  $('statsGrid').innerHTML = cards.map(([l, v, sub, c]) => `
+    <div class="bg-white rounded-2xl border border-slate-200 p-4">
+      <p class="text-xs font-semibold text-slate-500">${l}</p>
+      <p class="text-2xl font-extrabold mt-1 tabular-nums ${c}">${v}</p>
+      <p class="text-xs text-slate-400 mt-0.5">${sub}</p>
+    </div>`).join('');
+}
 
-  $('subjectBody').innerHTML = (p.subjects || []).map((s) => `
-    <tr>
-      <td class="px-3 py-2.5 font-medium text-slate-700">${escapeHtml(s.mapel)}</td>
-      <td class="px-3 py-2.5 text-right font-bold text-slate-900 tabular-nums">${fmt(s.nilai)}</td>
-      <td class="px-3 py-2.5">${s.kategori
-        ? `<span class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-bold ${KATEGORI_STYLE[String(s.kategori).toLowerCase()] || 'bg-slate-100 text-slate-700'}">${escapeHtml(s.kategori)}</span>`
-        : '<span class="text-slate-400">—</span>'}</td>
-    </tr>`).join('') || '<tr><td colspan="3" class="px-3 py-4 text-sm text-slate-500">Rincian nilai belum tersedia.</td></tr>';
+function renderKelasFilter() {
+  const sel = $('filterKelas'), cur = sel.value;
+  sel.innerHTML = '<option value="">Semua kelas</option>' + state.kelasList.map((k) => `<option value="${escapeHtml(k)}">${escapeHtml(k)}</option>`).join('');
+  if (state.kelasList.includes(cur)) sel.value = cur;
+}
 
-  if (p.ranking && p.totalPeserta) {
-    const top = Math.max(1, Math.ceil((p.ranking / p.totalPeserta) * 100));
-    const badge = p.ranking === 1 ? 'Peringkat tertinggi angkatan' : `Top ${top}% angkatan`;
-    $('rankBox').innerHTML = `
-      <div class="flex items-end gap-2">
-        <span class="text-6xl font-extrabold leading-none">${p.ranking}</span>
-        <span class="pb-1.5 text-brand-100">dari ${p.totalPeserta} siswa</span>
-      </div>
-      <p class="mt-2 font-semibold">Peringkat ${p.ranking} dari ${p.totalPeserta} siswa</p>
-      <span class="inline-block mt-2 rounded-full bg-gold-400 text-brand-900 text-xs font-bold px-3 py-1">${badge}</span>`;
-  } else {
-    $('rankBox').innerHTML = '<p class="text-lg font-semibold">Peringkat belum tersedia.</p>';
+function renderHead() {
+  const arrow = (k) => state.sortKey === k ? (state.sortDir === 1 ? ' ▲' : ' ▼') : '';
+  const th = (k, label, cls = '') => `<th data-sort="${k}" class="sortable bg-slate-50 px-3 py-3 font-semibold text-left whitespace-nowrap ${cls}">${label}${arrow(k)}</th>`;
+  $('thead').innerHTML = '<tr>' + th('ranking', 'Rank', 'w-16') + th('nis', 'NIS') + th('nama', 'Nama') + th('kelas', 'Kelas') +
+    state.subjectCols.map((c, i) => th('sub' + i, escapeHtml(c.label), 'text-right')).join('') +
+    th('total', 'Total', 'text-right') +
+    '<th class="bg-slate-50 px-3 py-3 font-semibold text-left">Sertifikat</th><th class="bg-slate-50 px-3 py-3 font-semibold text-left">Password</th>' +
+    (isReadOnly() ? '' : '<th class="bg-slate-50 px-3 py-3 font-semibold text-right">Aksi</th>') + '</tr>';
+  $('thead').querySelectorAll('[data-sort]').forEach((el) => el.addEventListener('click', () => {
+    const k = el.dataset.sort;
+    if (state.sortKey === k) state.sortDir *= -1;
+    else { state.sortKey = k; state.sortDir = (k === 'total' || k.startsWith('sub')) ? -1 : 1; }
+    renderHead(); renderTable();
+  }));
+}
+
+const sortValue = (s, k) => k.startsWith('sub') ? s.subjects[Number(k.slice(3))]?.nilai : s[k];
+function getFiltered() {
+  const q = $('search').value.trim().toLowerCase(), kelas = $('filterKelas').value, cert = $('filterCert').value;
+  const { sortKey: k, sortDir: d } = state;
+  return state.students.filter((s) =>
+    (!q || s.nama.toLowerCase().includes(q) || s.nis.toLowerCase().includes(q)) &&
+    (!kelas || s.kelas === kelas) && (!cert || (cert === 'yes' ? !!s.link : !s.link))
+  ).sort((a, b) => {
+    const va = sortValue(a, k), vb = sortValue(b, k);
+    const ea = va === null || va === undefined || va === '', eb = vb === null || vb === undefined || vb === '';
+    if (ea && eb) return 0; if (ea) return 1; if (eb) return -1;
+    if (typeof va === 'number' && typeof vb === 'number') return (va - vb) * d;
+    return String(va).localeCompare(String(vb), 'id', { numeric: true }) * d;
+  });
+}
+
+function rankBadge(r) {
+  if (!r) return '<span class="text-slate-400">—</span>';
+  const st = { 1: 'bg-amber-400 text-amber-950', 2: 'bg-slate-300 text-slate-800', 3: 'bg-orange-300 text-orange-950' };
+  return `<span class="inline-flex items-center justify-center min-w-[2rem] h-8 px-2 rounded-lg font-extrabold ${st[r] || 'bg-slate-100 text-slate-700'}">${r}</span>`;
+}
+const KAT = { istimewa: 'text-emerald-700', baik: 'text-sky-700', memadai: 'text-amber-700', kurang: 'text-red-600' };
+
+function subjectCell(sub, col) {
+  if (!sub || (sub.nilai === null && !sub.kategori)) return '<td class="px-3 py-2 text-right text-slate-300">—</td>';
+  const kat = sub.kategori ? `<div class="text-[10px] font-semibold ${KAT[sub.kategori.toLowerCase()] || 'text-slate-500'}">${escapeHtml(sub.kategori)}</div>` : '';
+  const name = col.uniform ? '' : `<div class="text-[10px] text-slate-400 whitespace-nowrap">${escapeHtml(sub.mapel)}</div>`;
+  return `<td class="px-3 py-2 text-right tabular-nums align-top">${name}<div>${fmt(sub.nilai)}</div>${kat}</td>`;
+}
+
+function renderTable() {
+  const rows = getFiltered(), ro = isReadOnly();
+  $('countInfo').textContent = `Menampilkan ${rows.length} dari ${state.students.length} siswa`;
+  if (!rows.length) {
+    $('tbody').innerHTML = `<tr><td colspan="${8 + state.subjectCols.length}" class="px-3 py-10 text-center text-slate-500">Tidak ada data yang cocok.</td></tr>`;
+    return;
   }
-
-  const notes = [];
-  const hasCert = !!p.certificateUrl;
-  $('certBtn').disabled = !hasCert;
-  if (!hasCert) notes.push('Sertifikat dinas belum tersedia. Tombol akan aktif setelah admin mengunggahnya.');
-  const canLetter = p.suratAktif && (p.subjects || []).length > 0;
-  $('letterBtn').disabled = !canLetter;
-  if (!p.suratAktif) notes.push('Surat hasil TKA belum dapat diunduh. Silakan cek kembali nanti.');
-  else notes.push('Surat hasil TKA berbentuk PDF dan dapat langsung dicetak.');
-  $('docNotes').innerHTML = notes.map((n) => `<li>• ${escapeHtml(n)}</li>`).join('');
+  $('tbody').innerHTML = rows.map((s) => `
+    <tr class="hover:bg-slate-50">
+      <td class="px-3 py-2">${rankBadge(s.ranking)}</td>
+      <td class="px-3 py-2 font-mono text-xs">${escapeHtml(s.nis)}</td>
+      <td class="px-3 py-2 font-semibold text-slate-900 whitespace-nowrap">${escapeHtml(s.nama)}</td>
+      <td class="px-3 py-2 whitespace-nowrap">${escapeHtml(s.kelas)}</td>
+      ${state.subjectCols.map((c, i) => subjectCell(s.subjects[i], c)).join('')}
+      <td class="px-3 py-2 text-right font-extrabold tabular-nums">${fmt(s.total)}</td>
+      <td class="px-3 py-2 whitespace-nowrap">${s.link
+        ? `<a href="${escapeHtml(s.link)}" target="_blank" rel="noopener" class="inline-flex rounded-full bg-brand-50 text-brand-700 px-2.5 py-1 text-xs font-semibold hover:underline">✓ Tersedia</a>`
+        : '<span class="inline-flex rounded-full bg-slate-100 text-slate-500 px-2.5 py-1 text-xs font-semibold">Belum ada</span>'}</td>
+      <td class="px-3 py-2 whitespace-nowrap">${s.passwordChanged ? '<span class="text-xs font-semibold text-violet-700">Sudah diubah</span>' : '<span class="text-xs font-semibold text-slate-400">Default</span>'}</td>
+      ${ro ? '' : `<td class="px-3 py-2 text-right whitespace-nowrap">
+        <button data-act="letter" data-nis="${escapeHtml(s.nis)}" class="rounded-lg border border-slate-300 hover:bg-slate-50 px-2 py-1.5 text-xs font-semibold" title="Unduh surat siswa ini">Surat</button>
+        <button data-act="link" data-nis="${escapeHtml(s.nis)}" class="rounded-lg border border-slate-300 hover:bg-slate-50 px-2 py-1.5 text-xs font-semibold">Sertifikat</button>
+        <button data-act="reset" data-nis="${escapeHtml(s.nis)}" class="rounded-lg border border-red-200 text-red-600 hover:bg-red-50 px-2 py-1.5 text-xs font-semibold">Reset PW</button>
+      </td>`}
+    </tr>`).join('');
 }
 
 /* ============================================================================
- *  SURAT PDF (dibuat di browser — tidak membebani server)
+ *  AKSI PER SISWA
  * ========================================================================== */
-async function getLetterAssets() {
-  try { const c = sessionStorage.getItem(ASSET_KEY); if (c) return JSON.parse(c); } catch {}
-  const res = await api('getLetterAssets', { token: state.token });
-  if (!res.ok) throw new Error(res.error);
-  try { sessionStorage.setItem(ASSET_KEY, JSON.stringify(res.data)); } catch {}
-  return res.data;
-}
-
-async function downloadLetter() {
-  const btn = $('letterBtn');
-  btnBusy(btn, true);
-  try {
-    // Ambil data terbaru dulu (pengaturan surat bisa saja baru diubah admin)
-    const fresh = await api('getSiswaData', { token: state.token });
-    if (!fresh.ok) { if (fresh.code !== 'SESSION_EXPIRED') toast(fresh.error, 'error'); return; }
-    state.profile = fresh.data.profile; state.fetchedAt = Date.now(); persistProfile(); renderDashboard();
-    if (!state.profile.suratAktif) { toast('Surat hasil TKA belum dibuka oleh sekolah.', 'error'); return; }
-
-    const [assets] = await Promise.all([getLetterAssets(), loadScript(CONFIG.JSPDF_URL)]);
-    if (!window.SuratTKA) await loadScript('surat-tka.js');
-    const doc = window.SuratTKA.createLetterPdf(window.jspdf.jsPDF, state.profile, state.profile.letter, assets);
-    doc.save(window.SuratTKA.fileName(state.profile));
-    toast('Surat berhasil diunduh.');
-  } catch (e) {
-    toast(e.message || 'Gagal membuat surat.', 'error');
-  } finally {
-    btnBusy(btn, false);
-    $('letterBtn').disabled = !(state.profile && state.profile.suratAktif);
-  }
-}
-
-/* ============================================================================
- *  EVENT
- * ========================================================================== */
-$('loginForm').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const nis = $('nis').value.trim(), password = $('password').value;
-  const err = $('loginError');
-  hide(err);
-  if (!nis || !password) { err.textContent = 'NIS dan password wajib diisi.'; show(err); return; }
-  const btn = $('loginBtn');
-  btnBusy(btn, true);
-  try {
-    const res = await api('loginSiswa', { nis, password });
-    if (!res.ok) { err.textContent = res.error; show(err); return; }
-    state.token = res.data.token; state.profile = res.data.profile; state.fetchedAt = Date.now();
-    saveSession($('remember').checked);
-    renderDashboard();
-    toast('Selamat datang, ' + state.profile.nama.split(' ')[0] + '!');
-  } catch (ex) {
-    err.textContent = ex.message; show(err);
-  } finally { btnBusy(btn, false); }
+$('tbody').addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-act]');
+  if (!btn) return;
+  const st = state.students.find((s) => s.nis === btn.dataset.nis);
+  if (!st) return;
+  if (btn.dataset.act === 'link') openLinkModal(st);
+  if (btn.dataset.act === 'reset') resetPassword(st);
+  if (btn.dataset.act === 'letter') downloadLetters([st], SuratTKAFile(st));
 });
+const SuratTKAFile = (st) => window.SuratTKA ? window.SuratTKA.fileName(st) : 'Surat-Hasil-TKA.pdf';
 
-$('logoutBtn').addEventListener('click', () => {
-  clearSession(); renderLogin(); $('nis').value = '';
-  toast('Anda telah keluar.');
+function openLinkModal(st) {
+  state.editingNis = st.nis;
+  $('linkStudent').textContent = `${st.nama} · NIS ${st.nis} · ${st.kelas}`;
+  $('linkInput').value = st.link || ''; $('linkFile').value = '';
+  hide($('linkError')); openModal('linkModal');
+}
+$('linkTest').addEventListener('click', () => {
+  const url = $('linkInput').value.trim();
+  if (/^https:\/\//i.test(url)) window.open(url, '_blank', 'noopener');
 });
-
-$('refreshBtn').addEventListener('click', async () => {
-  loading(true, 'Memuat data terbaru…');
+$('linkClear').addEventListener('click', () => saveLink(''));
+$('linkForm').addEventListener('submit', (e) => { e.preventDefault(); saveLink($('linkInput').value.trim()); });
+$('linkFile').addEventListener('change', async (e) => {
+  const file = e.target.files[0]; if (!file) return;
+  const st = state.students.find((s) => s.nis === state.editingNis);
+  loading(true, 'Mengunggah sertifikat ' + st.nama + '…');
   try {
-    const res = await api('getSiswaData', { token: state.token });
-    if (res.ok) { state.profile = res.data.profile; state.fetchedAt = Date.now(); persistProfile(); renderDashboard(); toast('Data diperbarui.'); }
-    else if (res.code !== 'SESSION_EXPIRED') toast(res.error, 'error');
-  } catch (ex) { toast(ex.message, 'error'); }
+    const r = await uploadOneCertificate(st.nis, file);
+    applyLink(st.nis, r.link);
+    closeModal('linkModal');
+    toast(r.warning || r.message, r.warning ? 'error' : 'success', 6000);
+  } catch (err) { $('linkError').textContent = err.message; show($('linkError')); }
   finally { loading(false); }
 });
 
-$('certBtn').addEventListener('click', () => {
-  const url = state.profile && state.profile.certificateUrl;
-  if (url && /^https:\/\//i.test(url)) window.open(url, '_blank', 'noopener');
-});
-$('letterBtn').addEventListener('click', downloadLetter);
-
-/* ---------- Modal ubah password ---------- */
-function openPw() {
-  ['oldPw', 'newPw', 'newPw2'].forEach((id) => { $(id).value = ''; $(id).type = 'password'; });
-  $('showPwAll').checked = false;
-  hide($('pwError')); show($('pwModal'));
-  setTimeout(() => $('oldPw').focus(), 50);
+function applyLink(nis, link) {
+  const st = state.students.find((s) => s.nis === nis);
+  if (st) st.link = link;
+  state.stats.sertifikatTerisi = state.students.filter((s) => !!s.link).length;
+  renderStats(); renderTable();
 }
-const closePw = () => hide($('pwModal'));
-document.querySelectorAll('[data-open-pw]').forEach((b) => b.addEventListener('click', openPw));
-document.querySelectorAll('[data-close-pw]').forEach((b) => b.addEventListener('click', closePw));
-$('pwModal').addEventListener('click', (e) => { if (e.target.id === 'pwModal') closePw(); });
-$('showPwAll').addEventListener('change', (e) => { ['oldPw', 'newPw', 'newPw2'].forEach((id) => { $(id).type = e.target.checked ? 'text' : 'password'; }); });
 
-$('pwForm').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const err = $('pwError');
-  const oldPassword = $('oldPw').value, newPassword = $('newPw').value, confirmPw = $('newPw2').value;
-  const fail = (m) => { err.textContent = m; show(err); };
-  hide(err);
-  if (!oldPassword || !newPassword) return fail('Semua kolom wajib diisi.');
-  if (newPassword.length < 6) return fail('Password baru minimal 6 karakter.');
-  if (newPassword !== confirmPw) return fail('Konfirmasi password baru tidak sama.');
-  if (newPassword === state.profile.nis) return fail('Password tidak boleh sama dengan NIS.');
-  const btn = $('pwSubmit');
-  btnBusy(btn, true);
+async function saveLink(link) {
+  const err = $('linkError'); hide(err);
+  if (link && !/^https:\/\/\S+$/i.test(link)) { err.textContent = 'Link harus diawali https:// dan tanpa spasi.'; show(err); return; }
+  const btn = $('linkSave'); btn.disabled = true;
   try {
-    const res = await api('changePasswordSiswa', { token: state.token, oldPassword, newPassword });
-    if (!res.ok) return fail(res.error);
-    state.profile.passwordIsDefault = false; persistProfile(); renderDashboard(); closePw();
-    toast('Password berhasil diubah. Gunakan password baru saat login berikutnya.');
-  } catch (ex) { fail(ex.message); }
-  finally { btnBusy(btn, false); }
-});
+    const res = await api('updateCertificateLink', { token: state.token, nis: state.editingNis, link });
+    if (!res.ok) { err.textContent = res.error; show(err); return; }
+    applyLink(state.editingNis, res.data.link);
+    closeModal('linkModal'); toast(res.data.message);
+  } catch (e) { err.textContent = e.message; show(err); }
+  finally { btn.disabled = false; }
+}
 
-$('togglePw').addEventListener('click', () => { const i = $('password'); i.type = i.type === 'password' ? 'text' : 'password'; });
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePw(); });
+async function resetPassword(st) {
+  if (!await confirmDialog('Reset password?', `Password ${st.nama} (NIS ${st.nis}) dikembalikan ke password default. Siswa perlu login ulang dengan password di kartu akun.`, 'Ya, reset')) return;
+  loading(true, 'Mereset password…');
+  try {
+    const res = await api('resetStudentPassword', { token: state.token, nis: st.nis });
+    if (!res.ok) { toast(res.error, 'error'); return; }
+    st.passwordChanged = false;
+    state.stats.passwordDiubah = state.students.filter((s) => s.passwordChanged).length;
+    renderStats(); renderTable(); toast(res.data.message);
+  } catch (e) { toast(e.message, 'error'); }
+  finally { loading(false); }
+}
+
+$('rankBtn').addEventListener('click', async () => {
+  if (!await confirmDialog('Hitung ulang ranking?', 'Kolom Ranking di sheet akan ditimpa dengan ranking otomatis berdasarkan Total_Nilai (nilai sama = peringkat sama). Total_Nilai kosong diisi jumlah nilai mapel.', 'Ya, hitung ulang')) return;
+  loading(true, 'Menghitung ranking…');
+  try {
+    const res = await api('recalculateRanking', { token: state.token });
+    if (!res.ok) { toast(res.error, 'error'); return; }
+    await loadData(true); toast(res.data.message);
+  } catch (e) { toast(e.message, 'error'); }
+  finally { loading(false); }
+});
 
 /* ============================================================================
- *  INISIALISASI
+ *  MENU UNDUH
  * ========================================================================== */
-(function init() {
-  applyConfigText();
-  // NIS otomatis terisi saat siswa memindai QR code di kartu akun (?nis=...)
-  const qsNis = new URLSearchParams(location.search).get('nis');
-  if (qsNis) $('nis').value = qsNis.replace(/[^0-9A-Za-z.-]/g, '').slice(0, 30);
+$('downloadMenuBtn').addEventListener('click', (e) => { e.stopPropagation(); $('downloadMenu').classList.toggle('hidden-el'); });
+document.addEventListener('click', () => hide($('downloadMenu')));
+document.querySelectorAll('[data-dl]').forEach((b) => b.addEventListener('click', async (e) => {
+  e.stopPropagation(); hide($('downloadMenu'));
+  const kind = b.dataset.dl;
+  try {
+    if (kind === 'recapXlsx') await exportRecapExcel();
+    if (kind === 'recapPdf') await exportRecapPdf();
+    if (kind === 'cardsPdf') await exportCardsPdf();
+    if (kind === 'letters') await downloadLetters(getFiltered());
+    if (kind === 'csv') exportCsv();
+    if (kind === 'template') await downloadTemplate();
+  } catch (err) { toast(err.message || 'Gagal membuat file.', 'error'); }
+  finally { loading(false); }
+}));
 
-  const s = loadSession();
-  if (s && s.token && s.profile) {
-    state = { token: s.token, profile: s.profile, fetchedAt: s.fetchedAt || 0 };
-    renderDashboard();
-    // Sinkron di latar belakang, dibatasi agar tidak membanjiri server saat halaman dimuat ulang
-    if (Date.now() - state.fetchedAt > REFRESH_MIN_MS) {
-      api('getSiswaData', { token: state.token }, { retries: 1 }).then((res) => {
-        if (res.ok) { state.profile = res.data.profile; state.fetchedAt = Date.now(); persistProfile(); renderDashboard(); }
-      }).catch(() => {});
+const filterLabel = () => $('filterKelas').value || 'Semua kelas';
+
+/** Data akun (dengan password awal) untuk siswa yang sedang tampil di tabel. */
+async function getRecapRows() {
+  const res = await api('getAccountRecap', { token: state.token });
+  if (!res.ok) throw new Error(res.error);
+  const byNis = Object.fromEntries(res.data.accounts.map((a) => [a.nis, a]));
+  const rows = getFiltered().map((s) => byNis[s.nis]).filter(Boolean)
+    .sort((a, b) => a.kelas.localeCompare(b.kelas, 'id', { numeric: true }) || a.nama.localeCompare(b.nama, 'id'));
+  if (!rows.length) throw new Error('Tidak ada siswa pada filter saat ini.');
+  return rows;
+}
+
+async function exportRecapExcel() {
+  loading(true, 'Menyiapkan rekap akun (Excel)…');
+  await libs('exceljs', 'qrcode');
+  const rows = await getRecapRows();
+  loading(true, `Membuat ${rows.length} QR code…`);
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'Portal Hasil TKA';
+  const ws = wb.addWorksheet('Rekap Akun', { pageSetup: { paperSize: 9, orientation: 'portrait', fitToPage: true, fitToWidth: 1, fitToHeight: 0 } });
+  ws.columns = [
+    { key: 'no', width: 5 }, { key: 'nis', width: 14 }, { key: 'nama', width: 32 }, { key: 'kelas', width: 12 },
+    { key: 'pw', width: 16 }, { key: 'status', width: 18 }, { key: 'url', width: 40 }, { key: 'qr', width: 14 }
+  ];
+  ws.mergeCells('A1:H1'); ws.getCell('A1').value = 'REKAP AKUN PORTAL PENGUMUMAN HASIL TKA';
+  ws.mergeCells('A2:H2'); ws.getCell('A2').value = CONFIG.SCHOOL_NAME + ' — ' + filterLabel();
+  ws.mergeCells('A3:H3'); ws.getCell('A3').value = 'Dicetak: ' + new Date().toLocaleString('id-ID') + ' · Alamat portal: ' + portalUrl();
+  ws.getCell('A1').font = { bold: true, size: 14 }; ws.getCell('A2').font = { bold: true, size: 11 }; ws.getCell('A3').font = { size: 9, color: { argb: 'FF64748B' } };
+  const head = ws.getRow(5);
+  head.values = ['No', 'NIS', 'Nama', 'Kelas', 'Password Awal', 'Status Password', 'Link Login', 'QR Code'];
+  head.font = { bold: true, color: { argb: 'FFFFFFFF' } }; head.alignment = { vertical: 'middle', horizontal: 'center' }; head.height = 22;
+  head.eachCell((c) => { c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF047857' } }; });
+  const border = { top: { style: 'thin', color: { argb: 'FFCBD5E1' } }, left: { style: 'thin', color: { argb: 'FFCBD5E1' } }, bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } }, right: { style: 'thin', color: { argb: 'FFCBD5E1' } } };
+  rows.forEach((a, i) => {
+    const r = 6 + i, url = loginUrlFor(a.nis);
+    const row = ws.getRow(r);
+    row.values = [i + 1, a.nis, a.nama, a.kelas, a.passwordChanged ? '(sudah diganti siswa)' : a.passwordAwal, a.passwordChanged ? 'Sudah diganti' : 'Masih default', { text: url, hyperlink: url }, ''];
+    row.height = 64;
+    row.alignment = { vertical: 'middle', wrapText: true };
+    row.getCell(2).numFmt = '@';
+    row.getCell(7).font = { color: { argb: 'FF0563C1' }, underline: true, size: 9 };
+    row.eachCell({ includeEmpty: true }, (c) => { c.border = border; });
+    const img = wb.addImage({ base64: qrDataUrl(url, 200), extension: 'png' });
+    ws.addImage(img, { tl: { col: 7.12, row: r - 1 + 0.06 }, ext: { width: 78, height: 78 } });
+  });
+  ws.views = [{ state: 'frozen', ySplit: 5 }];
+  ws.autoFilter = { from: 'A5', to: 'H5' };
+  const buf = await wb.xlsx.writeBuffer();
+  downloadBlob(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), `Rekap-Akun-TKA-${safeName(filterLabel())}-${today()}.xlsx`);
+  toast(`Rekap ${rows.length} akun berhasil diunduh.`);
+}
+
+async function exportRecapPdf() {
+  loading(true, 'Menyiapkan rekap akun (PDF)…');
+  await libs('jspdf', 'qrcode');
+  const rows = await getRecapRows();
+  const doc = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4' });
+  const cols = [['No', 10], ['NIS', 24], ['Nama', 62], ['Kelas', 22], ['Password Awal', 28], ['Status', 22], ['QR', 22]];
+  const X0 = 10, RH = 21;
+  const groups = {};
+  rows.forEach((r) => { (groups[r.kelas || '-'] = groups[r.kelas || '-'] || []).push(r); });
+  let first = true;
+  const header = (kelas, cont) => {
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(13);
+    doc.text('REKAP AKUN PORTAL PENGUMUMAN HASIL TKA', 105, 14, { align: 'center' });
+    doc.setFontSize(10); doc.setFont('helvetica', 'normal');
+    doc.text(`${CONFIG.SCHOOL_NAME} · Kelas ${kelas}${cont ? ' (lanjutan)' : ''}`, 105, 20, { align: 'center' });
+    doc.setFontSize(8); doc.setTextColor(100);
+    doc.text('Login: ' + portalUrl(), 105, 25, { align: 'center' }); doc.setTextColor(0);
+    let x = X0; const y = 29;
+    doc.setFillColor(4, 120, 87); doc.rect(X0, y, 190, 7, 'F');
+    doc.setTextColor(255); doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5);
+    cols.forEach(([t, w]) => { doc.text(t, x + w / 2, y + 4.8, { align: 'center' }); x += w; });
+    doc.setTextColor(0); doc.setFont('helvetica', 'normal');
+    return y + 7;
+  };
+  Object.keys(groups).sort((a, b) => a.localeCompare(b, 'id', { numeric: true })).forEach((kelas) => {
+    if (!first) doc.addPage(); first = false;
+    let y = header(kelas, false);
+    groups[kelas].forEach((a, i) => {
+      if (y + RH > 285) { doc.addPage(); y = header(kelas, true); }
+      let x = X0;
+      const cells = [String(i + 1), a.nis, a.nama, a.kelas, a.passwordChanged ? '(diganti siswa)' : a.passwordAwal, a.passwordChanged ? 'Diganti' : 'Default'];
+      doc.setDrawColor(203, 213, 225);
+      cols.forEach(([, w], c) => {
+        doc.rect(x, y, w, RH);
+        if (c < 6) {
+          doc.setFont('helvetica', c === 4 && !a.passwordChanged ? 'bold' : 'normal'); doc.setFontSize(9);
+          const lines = doc.splitTextToSize(cells[c], w - 3).slice(0, 3);
+          doc.text(lines, c === 2 ? x + 1.5 : x + w / 2, y + RH / 2 - (lines.length - 1) * 1.8 + 1, { align: c === 2 ? 'left' : 'center' });
+        } else {
+          doc.addImage(qrDataUrl(loginUrlFor(a.nis), 160), 'PNG', x + 2, y + 1.5, 18, 18);
+        }
+        x += w;
+      });
+      y += RH;
+    });
+  });
+  const n = doc.getNumberOfPages();
+  for (let p = 1; p <= n; p++) { doc.setPage(p); doc.setFontSize(7.5); doc.setTextColor(120); doc.text(`Halaman ${p} dari ${n} · Dicetak ${new Date().toLocaleString('id-ID')}`, 105, 292, { align: 'center' }); doc.setTextColor(0); }
+  doc.save(`Rekap-Akun-TKA-${safeName(filterLabel())}-${today()}.pdf`);
+  toast(`Rekap ${rows.length} akun berhasil diunduh.`);
+}
+
+async function exportCardsPdf() {
+  loading(true, 'Menyiapkan kartu akun…');
+  await libs('jspdf', 'qrcode');
+  const rows = await getRecapRows();
+  const doc = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4' });
+  const W = 90, H = 53, GX = 6, GY = 3, MX = 12, MY = 9;
+  const shortUrl = portalUrl().replace(/^https?:\/\//, '');
+  rows.forEach((a, i) => {
+    const pos = i % 10;
+    if (i > 0 && pos === 0) doc.addPage();
+    const x = MX + (pos % 2) * (W + GX), y = MY + Math.floor(pos / 2) * (H + GY);
+    doc.setLineDashPattern([1.2, 1.2], 0); doc.setDrawColor(150); doc.setLineWidth(0.2);
+    doc.rect(x, y, W, H); doc.setLineDashPattern([], 0);
+    doc.setFillColor(4, 120, 87); doc.rect(x, y, W, 9.5, 'F');
+    doc.setTextColor(255); doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5);
+    doc.text(CONFIG.SCHOOL_SHORT, x + 3, y + 4);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(6.8);
+    doc.text('KARTU AKUN PORTAL PENGUMUMAN HASIL TKA', x + 3, y + 7.6);
+    doc.setTextColor(0);
+    const lab = (t, v, yy, bold) => {
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(100); doc.text(t, x + 3, yy);
+      doc.setTextColor(0); doc.setFont('helvetica', bold ? 'bold' : 'normal'); doc.setFontSize(bold ? 10 : 8.5);
+      doc.text(doc.splitTextToSize(String(v), 52)[0], x + 3, yy + 3.8);
+    };
+    lab('Nama', a.nama, y + 14, true);
+    lab('NIS', a.nis, y + 22.5, true);
+    lab('Kelas', a.kelas, y + 31);
+    if (a.passwordChanged) lab('Password', '(sudah diganti siswa)', y + 39.5);
+    else lab('Password', a.passwordAwal, y + 39.5, true);
+    doc.addImage(qrDataUrl(loginUrlFor(a.nis), 200), 'PNG', x + W - 32, y + 12, 29, 29);
+    doc.setFontSize(5.8); doc.setTextColor(90); doc.setFont('helvetica', 'normal');
+    doc.text('Pindai QR untuk login', x + W - 17.5, y + 43.5, { align: 'center' });
+    doc.text(doc.splitTextToSize('Login: ' + shortUrl, W - 6)[0], x + 3, y + H - 5);
+    doc.setFont('helvetica', 'italic');
+    doc.text('Jaga kerahasiaan password. Segera ganti setelah login pertama.', x + 3, y + H - 2);
+    doc.setTextColor(0);
+  });
+  doc.save(`Kartu-Akun-TKA-${safeName(filterLabel())}-${today()}.pdf`);
+  toast(`${rows.length} kartu akun berhasil dibuat.`);
+}
+
+function exportCsv() {
+  const rows = getFiltered();
+  const header = ['Ranking', 'NIS', 'Nama', 'Kelas'];
+  state.subjectCols.forEach((c) => header.push('Mapel_' + c.key, 'Nilai_' + c.key, 'Kategori_' + c.key));
+  header.push('Total_Nilai', 'Link_Sertifikat', 'Status_Password');
+  const esc = (v) => { let s = String(v ?? ''); if (/^[=+\-@]/.test(s)) s = "'" + s; return /[",;\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  const lines = [header, ...rows.map((s) => {
+    const r = [s.ranking ?? '', s.nis, s.nama, s.kelas];
+    s.subjects.forEach((x) => r.push(x.nilai === null && !x.kategori ? '' : x.mapel, x.nilai ?? '', x.kategori));
+    r.push(s.total ?? '', s.link, s.passwordChanged ? 'Diubah' : 'Default');
+    return r;
+  })].map((r) => r.map(esc).join(','));
+  downloadBlob(new Blob(['﻿' + lines.join('\n')], { type: 'text/csv;charset=utf-8' }), `Data-Nilai-TKA-${safeName(filterLabel())}-${today()}.csv`);
+}
+
+/* ============================================================================
+ *  SURAT HASIL TKA (pratinjau, per siswa, massal)
+ * ========================================================================== */
+async function letterAssets() {
+  if (state.assets) return state.assets;
+  const res = await api('getLetterAssets', { token: state.token });
+  if (!res.ok) throw new Error(res.error);
+  return (state.assets = res.data);
+}
+
+async function downloadLetters(list, singleName) {
+  list = list.filter((s) => s.subjects.some((x) => x.nilai !== null || x.kategori));
+  if (!list.length) throw new Error('Tidak ada siswa bernilai pada filter saat ini.');
+  if (list.length > 1 && !await confirmDialog('Cetak surat massal?', `${list.length} surat (1 halaman per siswa) akan digabung menjadi satu PDF.`, 'Buat PDF', false)) return;
+  loading(true, `Membuat ${list.length} surat…`);
+  try {
+    const [assets] = await Promise.all([letterAssets(), libs('jspdf')]);
+    if (!window.SuratTKA) await loadScript('surat-tka.js');
+    await sleep(30);
+    const doc = window.SuratTKA.createLetterPdf(window.jspdf.jsPDF, list, state.letter, assets);
+    doc.save(singleName || `Surat-Hasil-TKA-${safeName(filterLabel())}-${today()}.pdf`);
+    toast(list.length > 1 ? `${list.length} surat berhasil dibuat.` : 'Surat berhasil diunduh.');
+  } finally { loading(false); }
+}
+
+/* ============================================================================
+ *  TEMPLATE & IMPORT EXCEL
+ * ========================================================================== */
+async function downloadTemplate() {
+  loading(true, 'Menyiapkan template…');
+  await libs('exceljs');
+  const keys = state.subjectCols.length ? state.subjectCols.map((c) => c.key) : ['1', '2', '3', '4', '5'];
+  const headers = ['NIS', 'Nama', 'Kelas', 'Password_Default'];
+  keys.forEach((k) => headers.push('Mapel_' + k, 'Nilai_' + k, 'Kategori_' + k));
+  headers.push('Total_Nilai', 'Ranking', 'No_Surat', 'Link_Sertifikat');
+
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet('Data');
+  ws.columns = headers.map((h) => ({ header: h, key: h, width: /^Mapel_/.test(h) ? 26 : h === 'Nama' ? 30 : h === 'Link_Sertifikat' ? 40 : 14 }));
+  const data = state.students.length ? state.students.map((s) => {
+    const o = { NIS: s.nis, Nama: s.nama, Kelas: s.kelas, No_Surat: s.noSurat || '', Link_Sertifikat: s.link || '' };
+    keys.forEach((k, i) => { const x = s.subjects[i]; if (x && (x.nilai !== null || x.kategori)) { o['Mapel_' + k] = x.mapel; o['Nilai_' + k] = x.nilai; o['Kategori_' + k] = x.kategori; } });
+    return o;
+  }) : [
+    { NIS: '0012301', Nama: 'Contoh Siswa Satu', Kelas: 'XII IPA 1', Password_Default: 'tka0012301', Mapel_1: 'Bahasa Indonesia Wajib', Nilai_1: 65.5, Kategori_1: 'Istimewa', Mapel_2: 'Matematika', Nilai_2: 38.26, Kategori_2: 'Memadai', Mapel_3: 'Bahasa Inggris Wajib', Nilai_3: 26.25, Kategori_3: 'Memadai', Mapel_4: 'Matematika Tingkat Lanjut', Nilai_4: 36.44, Kategori_4: 'Memadai', Mapel_5: 'Fisika', Nilai_5: 37.99, Kategori_5: 'Kurang' }
+  ];
+  data.forEach((o) => ws.addRow(o));
+  const hr = ws.getRow(1);
+  hr.font = { bold: true, color: { argb: 'FFFFFFFF' } }; hr.height = 20;
+  hr.eachCell((c, i) => { c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: i <= 3 ? 'FFB91C1C' : 'FF047857' } }; });
+  ws.views = [{ state: 'frozen', xSplit: 2, ySplit: 1 }];
+  const maxRow = Math.max(data.length + 300, 600);
+  headers.forEach((h, ci) => {
+    const col = ws.getColumn(ci + 1);
+    if (['NIS', 'Password_Default', 'No_Surat'].includes(h)) { for (let r = 2; r <= maxRow; r++) ws.getCell(r, ci + 1).numFmt = '@'; }
+    if (/^Kategori_/.test(h)) for (let r = 2; r <= maxRow; r++) ws.getCell(r, ci + 1).dataValidation = { type: 'list', allowBlank: true, formulae: ['"Istimewa,Baik,Memadai,Kurang"'] };
+    if (/^Nilai_|^Total_Nilai$/.test(h)) col.numFmt = '0.00';
+  });
+
+  const g = wb.addWorksheet('Petunjuk');
+  g.getColumn(1).width = 26; g.getColumn(2).width = 90;
+  [['PETUNJUK IMPORT DATA HASIL TKA', ''], ['', ''],
+   ['NIS (wajib)', 'Nomor induk siswa. Kolom sudah berformat teks agar angka 0 di depan tidak hilang.'],
+   ['Nama (wajib siswa baru)', 'Nama lengkap siswa.'],
+   ['Kelas', 'Kelas/rombel, mis. XII IPA 1. Dipakai untuk filter dan rekap per kelas.'],
+   ['Password_Default', 'Password awal & tujuan reset. Kosong = sama dengan NIS. Password yang sudah diganti siswa tidak ditimpa.'],
+   ['Mapel_n / Nilai_n / Kategori_n', 'Satu set per mata pelajaran (n = 1, 2, 3, ...). Mapel pilihan boleh berbeda antar siswa. Kategori: Istimewa / Baik / Memadai / Kurang.'],
+   ['Total_Nilai', 'Opsional. Kosong = dijumlah otomatis dari semua Nilai_n.'],
+   ['Ranking', 'Opsional. Kosong = dihitung otomatis dari Total_Nilai.'],
+   ['No_Surat', 'Opsional. Nomor surat khusus siswa ini; kosong = memakai format Nomor_Surat di Pengaturan.'],
+   ['Link_Sertifikat', 'Opsional. Link Google Drive sertifikat dinas.'],
+   ['', ''],
+   ['Aturan', 'Sel kosong TIDAK menghapus data lama. Baris pertama sheet "Data" harus berisi nama kolom.'],
+   ['Kolom tambahan', 'Kolom yang tidak dikenali akan diabaikan saat import.']
+  ].forEach((r, i) => { const row = g.addRow(r); if (i === 0) row.font = { bold: true, size: 13 }; else row.getCell(1).font = { bold: true }; row.alignment = { wrapText: true, vertical: 'top' }; });
+
+  const buf = await wb.xlsx.writeBuffer();
+  downloadBlob(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), `Template-Import-TKA-${today()}.xlsx`);
+  toast('Template diunduh. Isi/ubah data lalu import kembali.');
+}
+
+let importRows = null;
+$('importBtn').addEventListener('click', () => {
+  importRows = null; $('importFile').value = ''; $('importFileName').textContent = 'Belum ada file dipilih';
+  hide($('importPreview')); $('importSubmit').disabled = true;
+  document.querySelector('input[name="importMode"][value="upsert"]').checked = true; $('importOverwritePw').checked = false;
+  openModal('importModal');
+});
+$('importFile').addEventListener('change', (e) => e.target.files[0] && handleImportFile(e.target.files[0]));
+const dz = $('dropZone');
+['dragover', 'dragenter'].forEach((ev) => dz.addEventListener(ev, (e) => { e.preventDefault(); dz.classList.add('border-brand-500'); }));
+['dragleave', 'drop'].forEach((ev) => dz.addEventListener(ev, (e) => { e.preventDefault(); dz.classList.remove('border-brand-500'); }));
+dz.addEventListener('drop', (e) => e.dataTransfer.files[0] && handleImportFile(e.dataTransfer.files[0]));
+
+const KNOWN_COL = /^(NIS|Nama|Kelas|Password|Password_Default|Total_Nilai|Ranking|Link_Sertifikat|No_Surat|(Mapel|Nilai|Kategori)_[A-Za-z0-9_]+)$/i;
+
+async function handleImportFile(file) {
+  $('importFileName').textContent = file.name + ' (' + Math.round(file.size / 1024) + ' KB)';
+  loading(true, 'Membaca file…');
+  try {
+    await libs('xlsx');
+    const wb = XLSX.read(await file.arrayBuffer(), { type: 'array' });
+    const order = wb.SheetNames.slice().sort((a, b) => (/^(data|siswa)$/i.test(b) ? 1 : 0) - (/^(data|siswa)$/i.test(a) ? 1 : 0));
+    let parsed = null;
+    for (const name of order) {
+      const aoa = XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, defval: '', raw: true });
+      const hi = aoa.slice(0, 15).findIndex((r) => r.some((c) => String(c).trim().toUpperCase() === 'NIS'));
+      if (hi < 0) continue;
+      const headers = aoa[hi].map((h) => String(h).trim().replace(/\s+/g, '_'));
+      const rows = aoa.slice(hi + 1).filter((r) => r.some((c) => String(c).trim() !== '')).map((r) => {
+        const o = {}; headers.forEach((h, i) => { if (h) o[h] = typeof r[i] === 'string' ? r[i].trim() : r[i]; }); return o;
+      });
+      parsed = { name, headers: headers.filter(Boolean), rows };
+      break;
     }
-  } else {
-    renderLogin();
-    if (qsNis) setTimeout(() => $('password').focus(), 100);
-  }
+    if (!parsed) throw new Error('Tidak ditemukan baris judul berisi kolom "NIS" di file ini.');
+    const nisKey = parsed.headers.find((h) => h.toUpperCase() === 'NIS');
+    parsed.rows.forEach((r) => { if (typeof r[nisKey] === 'number') r[nisKey] = String(r[nisKey]); });
+    importRows = parsed.rows;
+    renderImportPreview(parsed, nisKey);
+  } catch (e) {
+    toast(e.message, 'error'); hide($('importPreview')); $('importSubmit').disabled = true;
+  } finally { loading(false); }
+}
+
+function renderImportPreview(parsed, nisKey) {
+  const existing = new Set(state.students.map((s) => s.nis));
+  const seen = new Set(); let noNis = 0, dup = 0, baru = 0, lama = 0;
+  parsed.rows.forEach((r) => {
+    const n = String(r[nisKey] ?? '').trim();
+    if (!n) { noNis++; return; }
+    if (seen.has(n)) { dup++; return; }
+    seen.add(n); existing.has(n) ? lama++ : baru++;
+  });
+  const box = (l, v, c) => `<div class="rounded-xl border border-slate-200 p-2.5"><p class="text-[11px] text-slate-500">${l}</p><p class="text-xl font-extrabold ${c}">${v}</p></div>`;
+  $('importSummary').innerHTML = box('Baris data', parsed.rows.length, '') + box('Siswa baru', baru, 'text-brand-700') + box('Diperbarui', lama, 'text-sky-700') + box('Bermasalah', noNis + dup, noNis + dup ? 'text-red-600' : 'text-slate-400');
+  const unknown = parsed.headers.filter((h) => !KNOWN_COL.test(h));
+  const warn = [];
+  warn.push(`<p class="text-slate-500">Sheet dibaca: <b>${escapeHtml(parsed.name)}</b> · ${parsed.headers.length} kolom</p>`);
+  if (noNis) warn.push(`<p class="text-red-600">• ${noNis} baris tanpa NIS akan dilewati.</p>`);
+  if (dup) warn.push(`<p class="text-red-600">• ${dup} NIS ganda — yang dipakai adalah baris terakhir.</p>`);
+  if (unknown.length) warn.push(`<p class="text-amber-700">• Kolom tidak dikenali (diabaikan): ${unknown.map(escapeHtml).join(', ')}</p>`);
+  if (!parsed.headers.some((h) => /^Nilai_/i.test(h))) warn.push('<p class="text-amber-700">• Tidak ada kolom Nilai_… — hanya identitas siswa yang akan diimport.</p>');
+  $('importWarnings').innerHTML = warn.join('');
+  const cols = parsed.headers.slice(0, 10);
+  $('importHead').innerHTML = '<tr>' + cols.map((h) => `<th class="px-2 py-1.5 text-left whitespace-nowrap ${KNOWN_COL.test(h) ? '' : 'text-amber-600'}">${escapeHtml(h)}</th>`).join('') + (parsed.headers.length > 10 ? '<th class="px-2">…</th>' : '') + '</tr>';
+  $('importBody').innerHTML = parsed.rows.slice(0, 8).map((r) => '<tr>' + cols.map((h) => `<td class="px-2 py-1 whitespace-nowrap">${escapeHtml(r[h])}</td>`).join('') + '</tr>').join('') +
+    (parsed.rows.length > 8 ? `<tr><td colspan="${cols.length + 1}" class="px-2 py-1.5 text-slate-400">… dan ${parsed.rows.length - 8} baris lainnya</td></tr>` : '');
+  show($('importPreview'));
+  $('importSubmit').disabled = !(baru + lama);
+}
+
+$('importSubmit').addEventListener('click', async () => {
+  if (!importRows) return;
+  const mode = document.querySelector('input[name="importMode"]:checked').value;
+  const overwritePassword = $('importOverwritePw').checked;
+  if (mode === 'replace' && !await confirmDialog('Ganti semua data?', 'Siswa yang TIDAK ada di file akan dihapus dari sheet Siswa. Lanjutkan?', 'Ya, ganti semua')) return;
+  if (overwritePassword && !await confirmDialog('Reset password?', 'Password siswa yang sudah diganti akan dikembalikan ke password default/file. Siswa harus login dengan password di kartu akun lagi.', 'Ya, reset')) return;
+  loading(true, `Mengimport ${importRows.length} baris…`);
+  try {
+    const res = await api('importStudents', { token: state.token, rows: importRows, mode, overwritePassword }, { retries: 1 });
+    if (!res.ok) { toast(res.error, 'error', 6000); return; }
+    closeModal('importModal');
+    await loadData(true);
+    const extra = res.data.newColumns?.length ? ' Kolom baru: ' + res.data.newColumns.join(', ') + '.' : '';
+    toast(res.data.message + extra, 'success', 7000);
+  } catch (e) { toast(e.message, 'error'); }
+  finally { loading(false); }
+});
+
+/* ============================================================================
+ *  UPLOAD SERTIFIKAT MASSAL
+ * ========================================================================== */
+const MIME = { pdf: 'application/pdf', jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png' };
+let certQueue = [];
+
+function readBase64(file) {
+  return new Promise((resolve, reject) => {
+    const fr = new FileReader();
+    fr.onload = () => resolve(String(fr.result).split(',')[1]);
+    fr.onerror = () => reject(new Error('Gagal membaca file ' + file.name));
+    fr.readAsDataURL(file);
+  });
+}
+
+async function uploadOneCertificate(nis, file) {
+  const ext = (file.name.split('.').pop() || '').toLowerCase();
+  if (!MIME[ext]) throw new Error('Format harus PDF, JPG, atau PNG.');
+  if (file.size > 10 * 1024 * 1024) throw new Error('Ukuran maksimal 10 MB.');
+  const res = await api('uploadCertificate', { token: state.token, nis, mimeType: MIME[ext], data: await readBase64(file) }, { retries: 2, timeout: 180000 });
+  if (!res.ok) throw new Error(res.error);
+  return res.data;
+}
+
+function matchStudent(fileName) {
+  const base = fileName.replace(/\.[^.]+$/, '');
+  const byNis = new Map(state.students.map((s) => [s.nis, s]));
+  for (const tok of base.match(/[0-9][0-9.]*[0-9]|[0-9]/g) || []) { if (byNis.has(tok)) return byNis.get(tok); }
+  const long = state.students.filter((s) => s.nis.length >= 4 && base.includes(s.nis)).sort((a, b) => b.nis.length - a.nis.length);
+  return long[0] || null;
+}
+
+$('uploadCertBtn').addEventListener('click', () => {
+  certQueue = []; $('certFiles').value = ''; $('certSummary').innerHTML = ''; $('certList').innerHTML = '';
+  hide($('certListWrap')); hide($('certProgressWrap')); $('certSubmit').disabled = true;
+  openModal('certModal');
+});
+$('certFiles').addEventListener('change', (e) => {
+  certQueue = Array.from(e.target.files).map((f) => ({ file: f, st: matchStudent(f.name), status: 'menunggu' }));
+  renderCertList();
+});
+function renderCertList() {
+  const ok = certQueue.filter((q) => q.st).length;
+  $('certSummary').innerHTML = `<b>${certQueue.length}</b> file dipilih · <b class="text-brand-700">${ok}</b> cocok dengan siswa` + (certQueue.length - ok ? ` · <b class="text-red-600">${certQueue.length - ok}</b> tidak cocok (dilewati)` : '');
+  const badge = { menunggu: 'text-slate-500', mengunggah: 'text-sky-700', berhasil: 'text-brand-700', gagal: 'text-red-600', dilewati: 'text-slate-400' };
+  $('certList').innerHTML = certQueue.map((q) => `<tr>
+    <td class="px-3 py-1.5 max-w-[16rem] truncate" title="${escapeHtml(q.file.name)}">${escapeHtml(q.file.name)}</td>
+    <td class="px-3 py-1.5">${q.st ? escapeHtml(q.st.nama) + ' <span class="text-slate-400">(' + escapeHtml(q.st.nis) + ')</span>' : '<span class="text-red-600">Tidak ditemukan NIS</span>'}</td>
+    <td class="px-3 py-1.5 font-semibold ${badge[q.st ? q.status : 'dilewati']}">${q.st ? escapeHtml(q.msg || q.status) : 'dilewati'}</td></tr>`).join('');
+  certQueue.length ? show($('certListWrap')) : hide($('certListWrap'));
+  $('certSubmit').disabled = !ok;
+}
+$('certSubmit').addEventListener('click', async () => {
+  const jobs = certQueue.filter((q) => q.st && q.status !== 'berhasil');
+  if (!jobs.length) return;
+  $('certSubmit').disabled = true; show($('certProgressWrap'));
+  let done = 0, okCount = 0;
+  const step = () => { $('certProgress').style.width = Math.round((done / jobs.length) * 100) + '%'; $('certProgressText').textContent = `${done} / ${jobs.length} file selesai`; };
+  step();
+  const worker = async () => {          // 2 unggahan paralel: cepat tanpa membebani server
+    while (jobs.length) {
+      const q = jobs.shift();
+      q.status = 'mengunggah'; renderCertList();
+      try { const r = await uploadOneCertificate(q.st.nis, q.file); q.status = 'berhasil'; q.msg = r.warning ? 'berhasil (cek izin berbagi)' : ''; okCount++; applyLink(q.st.nis, r.link); }
+      catch (e) { q.status = 'gagal'; q.msg = 'gagal: ' + e.message; }
+      done++; step(); renderCertList();
+    }
+  };
+  const total = jobs.length;
+  await Promise.all([worker(), worker()]);
+  $('certProgressText').textContent = `Selesai: ${okCount} dari ${total} file berhasil diunggah.`;
+  toast(`${okCount} sertifikat berhasil diunggah.`);
+  $('certSubmit').disabled = !certQueue.some((q) => q.st && q.status === 'gagal');
+});
+
+/* ============================================================================
+ *  PENGATURAN SURAT
+ * ========================================================================== */
+const SETTING_LABEL = {
+  Buka_Pengumuman: 'Waktu buka pengumuman', Surat_Aktif: 'Siswa boleh unduh surat?',
+  Kop_Baris_1: 'Kop baris 1', Kop_Baris_2: 'Kop baris 2', Kop_Baris_3: 'Kop baris 3', Kop_Baris_4: 'Kop baris 4', Kop_Baris_5: 'Kop baris 5',
+  Nomor_Surat: 'Nomor surat', Lampiran: 'Lampiran', Perihal: 'Perihal', Sebutan_Siswa: 'Keterangan setelah nama siswa',
+  Tanggal_Tes: 'Tanggal pelaksanaan TKA', Tempat_Tanggal_Surat: 'Tempat & tanggal surat',
+  Jabatan_Penandatangan: 'Jabatan penandatangan', Nama_Penandatangan: 'Nama penandatangan', NIY_Penandatangan: 'NIY penandatangan'
+};
+const WIDE = ['Kop_Baris_1', 'Kop_Baris_4', 'Kop_Baris_5', 'Perihal', 'Nomor_Surat'];
+
+$('settingsBtn').addEventListener('click', async () => {
+  loading(true, 'Memuat pengaturan…');
+  try {
+    const [res, assets] = await Promise.all([api('getSettings', { token: state.token }), letterAssets().catch(() => ({}))]);
+    if (!res.ok) { toast(res.error, 'error'); return; }
+    renderSettingsForm(res.data.fields);
+    setPreview('logo', assets.logo); setPreview('ttd', assets.ttd);
+    openModal('settingsModal');
+  } catch (e) { toast(e.message, 'error'); }
+  finally { loading(false); }
+});
+
+function renderSettingsForm(fields) {
+  const ro = isReadOnly() ? 'disabled' : '';
+  $('settingsForm').innerHTML = fields.map((f) => {
+    const label = `<span class="text-xs font-semibold text-slate-700">${escapeHtml(SETTING_LABEL[f.key] || f.key)}</span>`;
+    const help = `<span class="block text-[11px] text-slate-400 mt-0.5">${escapeHtml(f.help)}</span>`;
+    const cls = 'mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500';
+    let input;
+    if (f.key === 'Surat_Aktif') input = `<select name="${f.key}" class="${cls}" ${ro}><option value="YA" ${/^ya$/i.test(f.value) ? 'selected' : ''}>YA — aktif</option><option value="TIDAK" ${!/^ya$/i.test(f.value) ? 'selected' : ''}>TIDAK — nonaktif</option></select>`;
+    else if (f.key === 'Buka_Pengumuman') input = `<input type="datetime-local" name="${f.key}" value="${escapeHtml(String(f.value || '').replace(' ', 'T'))}" class="${cls}" ${ro} />`;
+    else input = `<input type="text" name="${f.key}" value="${escapeHtml(f.value)}" class="${cls}" ${ro} />`;
+    return `<label class="block ${WIDE.includes(f.key) ? 'sm:col-span-2' : ''}">${label}${input}${help}</label>`;
+  }).join('');
+}
+
+function setPreview(kind, url) {
+  const img = $(kind + 'Preview'), empty = $(kind + 'Empty');
+  if (url) { img.src = url; show(img); hide(empty); } else { hide(img); show(empty); }
+}
+
+$('settingsSave').addEventListener('click', async () => {
+  const settings = {};
+  new FormData($('settingsForm')).forEach((v, k) => { settings[k] = k === 'Buka_Pengumuman' ? String(v).replace('T', ' ') : v; });
+  loading(true, 'Menyimpan pengaturan…');
+  try {
+    const res = await api('updateSettings', { token: state.token, settings });
+    if (!res.ok) { toast(res.error, 'error'); return; }
+    state.letter = res.data.letter; state.suratAktif = /^ya$/i.test(settings.Surat_Aktif || '');
+    renderAll(); toast(res.data.message);
+  } catch (e) { toast(e.message, 'error'); }
+  finally { loading(false); }
+});
+
+/** Perkecil gambar sebelum diunggah agar surat ringan diunduh 300 siswa. */
+function resizeImage(file, maxW, maxH) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const r = Math.min(1, maxW / img.width, maxH / img.height);
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.width * r); c.height = Math.round(img.height * r);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(img.src);
+      resolve(c.toDataURL('image/png'));
+    };
+    img.onerror = () => reject(new Error('File gambar tidak valid.'));
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+['logo', 'ttd'].forEach((kind) => $(kind + 'File').addEventListener('change', async (e) => {
+  const file = e.target.files[0]; if (!file) return;
+  loading(true, 'Mengunggah gambar…');
+  try {
+    const dataUrl = kind === 'logo' ? await resizeImage(file, 400, 400) : await resizeImage(file, 700, 400);
+    const res = await api('uploadAsset', { token: state.token, kind, mimeType: 'image/png', data: dataUrl.split(',')[1] }, { timeout: 120000 });
+    if (!res.ok) { toast(res.error, 'error'); return; }
+    state.assets = null; setPreview(kind, res.data.dataUrl); toast(res.data.message);
+  } catch (err) { toast(err.message, 'error'); }
+  finally { loading(false); e.target.value = ''; }
+}));
+
+$('previewLetterBtn').addEventListener('click', async () => {
+  const st = getFiltered().find((s) => s.subjects.some((x) => x.nilai !== null)) || state.students[0];
+  if (!st) { toast('Belum ada data siswa untuk pratinjau.', 'error'); return; }
+  const win = window.open('', '_blank');
+  loading(true, 'Membuat pratinjau…');
+  try {
+    // Pakai isian form yang belum disimpan agar bisa dicek dulu
+    const letter = { ...state.letter };
+    new FormData($('settingsForm')).forEach((v, k) => { letter[k] = v; });
+    const [assets] = await Promise.all([letterAssets(), libs('jspdf')]);
+    const doc = window.SuratTKA.createLetterPdf(window.jspdf.jsPDF, st, letter, assets);
+    const url = doc.output('bloburl');
+    if (win) win.location.href = url; else doc.save('Pratinjau-Surat-TKA.pdf');
+  } catch (e) { if (win) win.close(); toast(e.message, 'error'); }
+  finally { loading(false); }
+});
+
+/* ============================================================================
+ *  LOGIN / LOGOUT / INIT
+ * ========================================================================== */
+$('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const username = $('username').value.trim(), password = $('password').value;
+  const err = $('loginError'), btn = $('loginBtn');
+  hide(err);
+  if (!username || !password) { err.textContent = 'Username dan password wajib diisi.'; show(err); return; }
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Memproses…';
+  try {
+    const res = await api('loginAdmin', { username, password });
+    if (!res.ok) { err.textContent = res.error; show(err); return; }
+    state.token = res.data.token; state.admin = res.data.admin;
+    saveSession(); await loadData();
+  } catch (ex) { err.textContent = ex.message; show(err); }
+  finally { btn.disabled = false; btn.textContent = 'Masuk'; }
+});
+$('logoutBtn').addEventListener('click', () => { logoutLocal(); toast('Anda telah keluar.'); });
+$('refreshBtn').addEventListener('click', async () => { state.assets = null; if (await loadData()) toast('Data dimuat ulang.'); });
+['search', 'filterKelas', 'filterCert'].forEach((id) => $(id).addEventListener('input', renderTable));
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  if (!$('confirmModal').classList.contains('hidden-el')) { $('confirmNo').click(); return; }
+  document.querySelectorAll('.modal').forEach(hide); hide($('downloadMenu'));
+});
+
+(function init() {
+  document.querySelectorAll('[data-cfg]').forEach((el) => { el.textContent = CONFIG[el.dataset.cfg] ?? ''; });
+  const s = loadSession();
+  if (s && s.token) { state.token = s.token; state.admin = s.admin; loadData(); }
 })();
 </script>
 </body>
